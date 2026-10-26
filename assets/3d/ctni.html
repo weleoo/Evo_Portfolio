@@ -1,0 +1,546 @@
+<!doctype html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>CTNI TEST 3D Box - علبة فحص التروبونين ثلاثية الأبعاد</title>
+<style>
+  html,body{margin:0;height:100%;background:transparent;overflow:hidden;
+    font-family:'Poppins',system-ui,-apple-system,'Segoe UI',Roboto,sans-serif}
+  #c{position:fixed;inset:0;width:100%;height:100%;display:block;touch-action:none;outline:none}
+  #hint{position:fixed;left:50%;bottom:18px;transform:translateX(-50%);
+    background:rgba(255,255,255,.92);color:#2535a8;font-size:13px;font-weight:700;
+    padding:10px 22px;border-radius:30px;box-shadow:0 3px 14px rgba(0,0,0,.14);
+    pointer-events:none;transition:opacity .3s;white-space:nowrap;user-select:none}
+  #btn{position:fixed;right:18px;top:16px;border:0;cursor:pointer;color:#fff;font-weight:700;
+    font-size:13px;padding:10px 24px;border-radius:30px;
+    background:linear-gradient(135deg, #0055d0, #4a98ff);box-shadow:0 3px 12px rgba(0,85,208,.25);
+    transition:transform .15s}
+  #btn:hover{transform:scale(1.04)}
+  #btn:active{transform:scale(0.97)}
+  #btn:disabled{opacity:.55;cursor:default;transform:none}
+  #load{position:fixed;inset:0;display:flex;align-items:center;justify-content:center;
+    background:rgba(240,244,249,.85);color:#0055d0;font-size:16px;font-weight:700;transition:opacity .4s;pointer-events:none}
+</style>
+<script type="importmap">{ "imports": { "three": "./three.module.js" } }</script>
+</head>
+<body>
+<canvas id="c" tabindex="0"></canvas>
+<div id="load">جاري تحميل مجسم CTNI TEST...</div>
+<div id="hint">اضغط على استيكر QC لفتح العلبة • اسحب للتدوير</div>
+<button id="btn">Open box</button>
+
+<script type="module">
+import * as THREE from 'three';
+import { OrbitControls } from './OrbitControls.js';
+
+/* ───────────────────────── 1. أبعاد علبة CTNI TEST ───────────────────────── */
+const L = 4.35;                   // الطول
+const W = 3.20;                   // العرض / العمق
+const H = 2.00;                   // الارتفاع
+const T = 0.04;                   // سمك الكرتون
+const FH = H * 0.12;              // ارتفاع لسان الغطا
+const DURATION = 2.4;             // زمن الفتح بالثواني
+const LID_OPEN = Math.PI * 0.62;  // زاوية ميل الغطاء عند الفتح
+
+/* ───────────────────────── 2. المشهد والإضاءة ───────────────────────── */
+const canvas = document.getElementById('c');
+const renderer = new THREE.WebGLRenderer({ canvas, antialias: true, alpha: true });
+renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+renderer.setClearColor(0x000000, 0);
+renderer.shadowMap.enabled = true;
+renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+
+const scene = new THREE.Scene();
+const camera = new THREE.PerspectiveCamera(38, 1, 0.1, 100);
+camera.position.set(0, 5.0, 11.8);
+
+const controls = new OrbitControls(camera, canvas);
+controls.target.set(0, 1.2, 0);
+controls.enableDamping = true;
+controls.enablePan = false;
+controls.minDistance = 4;
+controls.maxDistance = 22;
+controls.maxPolarAngle = Math.PI * 0.53;
+
+scene.add(new THREE.HemisphereLight(0xffffff, 0xaebbd0, 1.35));
+const sun = new THREE.DirectionalLight(0xffffff, 1.5);
+sun.position.set(2.5, 8, 9);
+sun.castShadow = true;
+sun.shadow.mapSize.set(2048, 2048);
+Object.assign(sun.shadow.camera, { left: -9, right: 9, top: 9, bottom: -9, near: 1, far: 35 });
+sun.shadow.bias = -0.0004;
+scene.add(sun);
+
+const ground = new THREE.Mesh(new THREE.PlaneGeometry(60, 60), new THREE.ShadowMaterial({ opacity: 0.16 }));
+ground.rotation.x = -Math.PI / 2;
+ground.receiveShadow = true;
+scene.add(ground);
+
+/* ───────────────────────── 3. تحميل خامات CTNI الأصلية ───────────────────────── */
+const manager = new THREE.LoadingManager(() => {
+  const l = document.getElementById('load');
+  if (l) { l.style.opacity = '0'; setTimeout(() => l.remove(), 400); }
+});
+const loader = new THREE.TextureLoader(manager);
+const aniso = renderer.capabilities.getMaxAnisotropy();
+
+function tex(name) {
+  const t = loader.load('textures/ctni/' + name);
+  t.colorSpace = THREE.SRGBColorSpace;
+  t.anisotropy = aniso;
+  return t;
+}
+
+const std = (o) => new THREE.MeshStandardMaterial({ roughness: 0.55, metalness: 0, ...o });
+const cream = std({ color: 0xf5efe6, roughness: 0.9 }); // كرتون داخلي ناصع مطابق للعلبة الحقيقية
+
+function slab(w, h, d, outIdx, map) {
+  const mats = [cream, cream, cream, cream, cream, cream];
+  if (map) mats[outIdx] = std({ map, roughness: 0.42 });
+  const m = new THREE.Mesh(new THREE.BoxGeometry(w, h, d), mats);
+  m.castShadow = m.receiveShadow = true;
+  return m;
+}
+
+/* ───────────────────────── 4. بناء هيكل علبة CTNI ───────────────────────── */
+const box = new THREE.Group();
+scene.add(box);
+
+const frontBodyH = H - FH;
+const frontTexBody = tex('front.jpg');
+frontTexBody.repeat.set(1, frontBodyH / H);
+frontTexBody.offset.set(0, 0);
+
+const frontTexFlap = tex('front.jpg');
+frontTexFlap.repeat.set(1, FH / H);
+frontTexFlap.offset.set(0, 1 - FH / H);
+
+const front = slab(L - 2 * T, frontBodyH, T, 4, frontTexBody);
+front.position.set(0, frontBodyH / 2, W / 2 - T / 2);
+
+const back = slab(L - 2 * T, H, T, 5, tex('back.jpg'));
+back.position.set(0, H / 2, -W / 2 + T / 2);
+
+const right = slab(T, H, W, 0, tex('right.jpg'));
+right.position.set(L / 2 - T / 2, H / 2, 0);
+
+const left = slab(T, H, W, 1, tex('left.jpg'));
+left.position.set(-L / 2 + T / 2, H / 2, 0);
+
+const bottom = slab(L, T, W, 3, null);
+bottom.position.set(0, T / 2, 0);
+
+box.add(front, back, right, left, bottom);
+
+// الغطاء العلوي
+const lid = new THREE.Group();
+lid.position.set(0, H, -W / 2);
+box.add(lid);
+
+const lidTop = slab(L, T, W, 2, tex('top.jpg'));
+lidTop.position.set(0, T / 2, W / 2);
+
+const flap = slab(L - 2 * T, FH, T, 4, frontTexFlap);
+flap.position.set(0, -FH / 2, W - T / 2);
+
+lid.add(lidTop, flap);
+
+/* ───────────────────────── 5. المحتويات الداخلية لـ CTNI الحقيقية ─────────────────────────
+   - العلبة ممتلئة بـ 40 كيس فحص فضي متراصين بكامل مساحة العلبة.
+   - زجاجة قطارة المحلول المنظم Troponin I Buffer في الجانب الأيسر.
+   ────────────────────────────────────────────────────────────────────────────── */
+const inner = new THREE.Group();
+box.add(inner);
+
+// أبعاد كيس الفحص الفضي الواحد (نسبة 1.8 متطابقة مع حجم الكيس الواقعي)
+const PL = 2.95;                  // طول الكيس الفضي
+const PH = 1.64;                  // ارتفاع الكيس
+const PT = 0.052;                 // سمك الكيس
+const pouchSilverMat = std({ color: 0xd8e0ea, roughness: 0.32, metalness: 0.40 });
+
+// رصّة الـ 40 كيس فحص فضي داخل العلبة (مزاحة لليمين لإتاحة مساحة لزجاجة القطارة على اليسار)
+const stackX = 0.42;
+const numPouches = 40;
+const zStart = -W / 2 + T + 0.12;
+const zEnd   =  W / 2 - T - 0.12;
+const zStep  = (zEnd - zStart) / (numPouches - 1);
+const pouchGeo = new THREE.BoxGeometry(PL, PH, PT);
+
+// مكان الكارت البطل الذي سيخرج في الأنيميشن
+const heroIndex = 26;
+let heroStart = new THREE.Vector3(stackX, T + PH / 2, 0);
+
+for (let i = 0; i < numPouches; i++) {
+  const z = zStart + i * zStep;
+  if (i === heroIndex) {
+    heroStart.set(stackX, T + PH / 2, z);
+    continue; // سيتم تمثيله بالكارت البطل المتحرك
+  }
+  const pouchMesh = new THREE.Mesh(pouchGeo, pouchSilverMat);
+  pouchMesh.position.set(stackX, T + PH / 2, z);
+  pouchMesh.castShadow = pouchMesh.receiveShadow = true;
+  inner.add(pouchMesh);
+}
+
+// الكارت البطل بوجهيه (المطبوع بالبيانات الأصلية)
+const pouchFront = tex('pouch_front.jpg');
+const pouchBack  = tex('pouch_back.jpg');
+const heroMats = [
+  pouchSilverMat, pouchSilverMat, pouchSilverMat, pouchSilverMat,
+  std({ map: pouchFront, roughness: 0.3, metalness: 0.08 }),
+  std({ map: pouchBack,  roughness: 0.3, metalness: 0.08 })
+];
+const hero = new THREE.Mesh(new THREE.BoxGeometry(PL, PH, PT), heroMats);
+hero.castShadow = true;
+const heroPivot = new THREE.Group();
+heroPivot.add(hero);
+inner.add(heroPivot);
+heroPivot.position.copy(heroStart);
+
+/* ───────────────────────── زجاجة قطارة Troponin I Buffer ───────────────────────── */
+function makeBufferLabel() {
+  const c = document.createElement('canvas'); c.width = 512; c.height = 256;
+  const g = c.getContext('2d');
+  g.fillStyle = '#ffffff';
+  g.fillRect(0, 0, 512, 256);
+
+  // إطار أزرق علوي وسفلي
+  g.fillStyle = '#0055d0';
+  g.fillRect(0, 0, 512, 12);
+  g.fillRect(0, 244, 512, 12);
+
+  // النص
+  g.fillStyle = '#111111';
+  g.font = 'bold 36px Arial, sans-serif';
+  g.textAlign = 'center';
+  g.fillText('Troponin I Buffer', 256, 60);
+
+  g.fillStyle = '#333333';
+  g.font = '22px Arial, sans-serif';
+  g.fillText('REF: EM-CTNI40   •   Vol: 3.0 mL', 256, 110);
+  g.fillText('LOT: CTNI2608901   •   EXP: 2028-03', 256, 150);
+  g.fillText('Store at 2°C - 30°C   •   IVD', 256, 190);
+
+  g.fillStyle = '#c4161c';
+  g.font = 'bold 22px Arial, sans-serif';
+  g.fillText('EVO MED L.L.C', 256, 226);
+
+  const t = new THREE.CanvasTexture(c);
+  t.colorSpace = THREE.SRGBColorSpace;
+  return t;
+}
+
+function makeBufferBottle() {
+  const g = new THREE.Group();
+  const labelTex = makeBufferLabel();
+
+  // جسم الزجاجة الأبيض مع الليبل المطبوع
+  const bodyGeo = new THREE.CylinderGeometry(0.32, 0.34, 1.15, 32);
+  const bodyMats = [
+    std({ map: labelTex, roughness: 0.35 }),
+    std({ color: 0xffffff, roughness: 0.35 }),
+    std({ color: 0xffffff, roughness: 0.35 })
+  ];
+  const body = new THREE.Mesh(bodyGeo, bodyMats);
+  body.position.y = 0.575;
+
+  // كتف الزجاجة
+  const shoulder = new THREE.Mesh(new THREE.CylinderGeometry(0.18, 0.32, 0.22, 24), std({ color: 0xf5f5f5, roughness: 0.4 }));
+  shoulder.position.y = 1.26;
+
+  // غطاء القطارة المخروطي الأبيض
+  const cap = new THREE.Mesh(new THREE.CylinderGeometry(0.06, 0.19, 0.65, 24), std({ color: 0xffffff, roughness: 0.3 }));
+  cap.position.y = 1.685;
+
+  [body, shoulder, cap].forEach(m => { m.castShadow = true; g.add(m); });
+  return g;
+}
+
+const bottle = makeBufferBottle();
+// مكان الزجاجة داخل العلبة في الجانب الأيسر بين الأكياس كما في الصورة
+const bottleStart = new THREE.Vector3(-L / 2 + T + 0.42, T, 0.15);
+bottle.position.copy(bottleStart);
+inner.add(bottle);
+
+/* ───────────────────────── 6. استيكر QC PASS التفاعلي (مطابق تماماً لـ HPylori Ag) ───────────────────────── */
+function makeStickerTexture() {
+  const s = 512, c = document.createElement('canvas'); c.width = c.height = s;
+  const g = c.getContext('2d');
+  g.clearRect(0, 0, s, s);
+
+  // قرص الاستيكر الشفاف/اللامع (Vinyl)
+  const grad = g.createRadialGradient(s * 0.45, s * 0.38, 15, s / 2, s / 2, s / 2 - 8);
+  grad.addColorStop(0, 'rgba(255, 255, 255, 0.92)');
+  grad.addColorStop(0.5, 'rgba(245, 248, 255, 0.75)');
+  grad.addColorStop(0.95, 'rgba(225, 235, 250, 0.60)');
+  grad.addColorStop(1, 'rgba(210, 225, 245, 0.35)');
+
+  g.beginPath();
+  g.arc(s / 2, s / 2, s / 2 - 10, 0, Math.PI * 2);
+  g.fillStyle = grad;
+  g.fill();
+
+  // إطار فضي لامع
+  g.lineWidth = 7;
+  g.strokeStyle = 'rgba(255, 255, 255, 0.95)';
+  g.stroke();
+  g.lineWidth = 2;
+  g.strokeStyle = 'rgba(74, 152, 255, 0.65)';
+  g.stroke();
+
+  // نص QC PASS بالخط العريض الأسود المطابق للاستيكر الحقيقي
+  g.fillStyle = '#111111';
+  g.textAlign = 'center';
+  g.textBaseline = 'middle';
+  g.font = '900 160px "Arial Black", Impact, sans-serif';
+  g.fillText('QC', s / 2, s / 2 - 68);
+  g.font = '900 120px "Arial Black", Impact, sans-serif';
+  g.fillText('PASS', s / 2, s / 2 + 82);
+
+  const t = new THREE.CanvasTexture(c);
+  t.colorSpace = THREE.SRGBColorSpace;
+  t.anisotropy = aniso;
+  return t;
+}
+
+const SD = 0.95, SEAM = 0.35;                      // قطر الاستيكر + نسبة اللي فوق خط الغطا
+const frontH = SD * (1 - SEAM), topH = SD * SEAM;
+const stickerX = 0.0;
+const frontY = H - frontH / 2;
+const stickerBaseZ = W / 2 + 0.012;
+
+// مادة الاستيكر من الوجهين
+const stickerTex = makeStickerTexture();
+const stickerMat = new THREE.MeshStandardMaterial({
+  map: stickerTex,
+  transparent: true,
+  roughness: 0.25,
+  metalness: 0.1,
+  side: THREE.DoubleSide,
+  depthWrite: false,
+});
+
+// مجسم الوش الأمامي مقسم (16x32) علشان يتقشر وينثني واقعياً
+const geomFront = new THREE.PlaneGeometry(SD, frontH, 16, 32);
+const uvF = geomFront.attributes.uv;
+for (let i = 0; i < uvF.count; i++) uvF.setY(i, uvF.getY(i) * (1 - SEAM));
+const posF = geomFront.attributes.position;
+const origPosF = Float32Array.from(posF.array);
+const stickerFront = new THREE.Mesh(geomFront, stickerMat);
+stickerFront.position.set(stickerX, frontY, stickerBaseZ);
+box.add(stickerFront);
+
+// مجسم الوش العلوي (على الغطا)
+const geomTop = new THREE.PlaneGeometry(SD, topH, 16, 16);
+const uvT = geomTop.attributes.uv;
+for (let i = 0; i < uvT.count; i++) uvT.setY(i, (1 - SEAM) + uvT.getY(i) * SEAM);
+const posT = geomTop.attributes.position;
+const origPosT = Float32Array.from(posT.array);
+const stickerTop = new THREE.Mesh(geomTop, stickerMat);
+stickerTop.rotation.x = -Math.PI / 2;
+stickerTop.position.set(stickerX, T + 0.012, W - topH / 2);
+lid.add(stickerTop);
+
+// حلقة توهج ناعمة لجذب الانتباه للاستيكر
+const glowRingMat = new THREE.MeshBasicMaterial({ color: 0x4a98ff, transparent: true, opacity: 0.6, depthWrite: false });
+const glowRing = new THREE.Mesh(new THREE.RingGeometry(SD / 2 + 0.02, SD / 2 + 0.08, 48), glowRingMat);
+glowRing.position.set(stickerX, H, stickerBaseZ + 0.002);
+box.add(glowRing);
+
+/* ───────────────────────── 7. محرك الأنيميشن ───────────────────────── */
+let p = 0, targetP = 0, flip = 0, flipTarget = 0;
+const seg = (t, a, b) => Math.max(0, Math.min(1, (t - a) / (b - a)));
+const ease = (t) => t < 0.5 ? 4 * t * t * t : 1 - Math.pow(-2 * t + 2, 3) / 2;
+const lerp = (a, b, t) => a + (b - a) * t;
+
+// إحداثيات رفع وخروج الكارت والزجاجة للأمام (مفصولين بمسافة واضحة ومريحة بدون ملامسة)
+const heroLift   = new THREE.Vector3(stackX, H + 0.6, heroStart.z);
+const heroEnd    = new THREE.Vector3(0.52, H + 1.25, W / 2 + 0.55);
+
+const bottleLift = new THREE.Vector3(bottleStart.x, H + 0.6, bottleStart.z);
+const bottleEnd  = new THREE.Vector3(-1.62, H + 1.15, W / 2 + 0.50);
+
+function applyState(time) {
+  // ──────────────── 1) مرحلة تقشير الاستيكر أولاً ────────────────
+  const s_peel = ease(seg(p, 0.0, 0.24));
+  const s_fly  = ease(seg(p, 0.22, 0.32));
+
+  const idle = p === 0 && targetP === 0;
+  glowRing.visible = idle;
+  if (idle) {
+    glowRingMat.opacity = 0.35 + 0.35 * Math.sin(time * 4);
+    glowRing.scale.setScalar(1 + 0.04 * Math.sin(time * 4));
+  }
+
+  stickerFront.visible = stickerTop.visible = s_fly < 0.999;
+  stickerMat.opacity = (1 - s_fly * s_fly);
+
+  // انحناء وتقشير الجزء الأمامي
+  const rCurl = 0.18;
+  for (let i = 0; i < posF.count; i++) {
+    const x0 = origPosF[i * 3];
+    const y0 = origPosF[i * 3 + 1];
+    const v = (y0 + frontH / 2) / frontH;
+    const v_eff = v + (x0 / SD) * 0.12;
+    const peelLevel = s_peel * 1.25;
+
+    if (v_eff >= peelLevel) {
+      posF.setXYZ(i, x0, y0, 0);
+    } else {
+      const d = (peelLevel - v_eff) * frontH;
+      const theta = d / rCurl;
+      let y, z;
+      if (theta < Math.PI) {
+        z = rCurl * (1 - Math.cos(theta));
+        y = (peelLevel - (x0 / SD) * 0.12) * frontH - frontH / 2 - rCurl * Math.sin(theta);
+      } else {
+        const tail = d - Math.PI * rCurl;
+        z = 2 * rCurl + tail * 0.3;
+        y = (peelLevel - (x0 / SD) * 0.12) * frontH - frontH / 2 - tail * 0.9;
+      }
+      posF.setXYZ(i, x0, y, z);
+    }
+  }
+  posF.needsUpdate = true;
+  geomFront.computeVertexNormals();
+
+  // تقشير الجزء العلوي على الغطا لما التقشير يوصل للفاصل
+  const s_top_peel = ease(seg(p, 0.14, 0.25));
+  for (let i = 0; i < posT.count; i++) {
+    const x0 = origPosT[i * 3];
+    const y0 = origPosT[i * 3 + 1];
+    const v = (y0 + topH / 2) / topH;
+    if (v <= s_top_peel) {
+      const d = (s_top_peel - v) * topH;
+      const z = Math.sin(d / 0.15) * 0.12;
+      posT.setXYZ(i, x0, y0, z);
+    } else {
+      posT.setXYZ(i, x0, y0, 0);
+    }
+  }
+  posT.needsUpdate = true;
+
+  // طيران الاستيكر بعيداً بعد ما اتقشر تماماً
+  if (s_fly > 0) {
+    stickerFront.position.z = stickerBaseZ + s_fly * 0.8;
+    stickerFront.position.y = frontY + s_fly * 0.45;
+    stickerFront.rotation.set(-s_fly * 0.8, s_fly * 1.2, s_fly * 0.6);
+    stickerTop.position.y = (T + 0.012) + s_fly * 0.45;
+    stickerTop.rotation.set(-Math.PI / 2 - s_fly * 0.6, s_fly * 0.8, 0);
+  } else {
+    stickerFront.position.set(stickerX, frontY, stickerBaseZ);
+    stickerFront.rotation.set(0, 0, 0);
+    stickerTop.position.set(stickerX, T + 0.012, W - topH / 2);
+    stickerTop.rotation.set(-Math.PI / 2, 0, 0);
+  }
+
+  // ──────────────── 2) فتح الغطا (يبدأ فقط بعد انفصال الاستيكر بالكامل) ────────────────
+  const s_lid = ease(seg(p, 0.30, 0.64));
+  lid.rotation.x = -s_lid * LID_OPEN;
+
+  // ──────────────── 3) خروج كيس CTNI وزجاجة Troponin I Buffer ────────────────
+  const lift = ease(seg(p, 0.62, 0.82));
+  const move = ease(seg(p, 0.80, 1.0));
+  const bob = move > 0.99 ? Math.sin(time * 1.8) * 0.05 : 0;
+
+  heroPivot.position.lerpVectors(heroStart, heroLift, lift).lerp(heroEnd, move);
+  heroPivot.position.y += bob;
+  heroPivot.rotation.y = flip;
+
+  bottle.position.lerpVectors(bottleStart, bottleLift, lift).lerp(bottleEnd, move);
+  bottle.position.y += bob;
+  bottle.rotation.y = Math.PI + 0.08 * move;
+  bottle.rotation.z = 0.08 * move;
+
+  // تقريب الكاميرا بسلاسة
+  const open = ease(seg(p, 0.15, 0.85));
+  controls.target.y = lerp(1.2, 2.5, open);
+  const z = lerp(1.35, 1.0, open);
+  if (Math.abs(camera.zoom - z) > 0.0005) { camera.zoom = z; camera.updateProjectionMatrix(); }
+}
+
+/* ───────────────────────── 8. التفاعل والتحكم ───────────────────────── */
+const hint = document.getElementById('hint');
+const btn = document.getElementById('btn');
+
+function setOpen(open) {
+  targetP = open ? 1 : 0;
+  btn.disabled = true;
+  hint.style.opacity = 0;
+}
+
+function updateUI() {
+  if (btn.disabled && Math.abs(p - targetP) < 0.001) {
+    btn.disabled = false;
+    if (targetP === 1) {
+      btn.textContent = 'Close box';
+      hint.textContent = 'انقر على كيس الفحص لقلبه • اسحب بالماوس للتدوير';
+    } else {
+      btn.textContent = 'Open box';
+      hint.textContent = 'اضغط على استيكر QC لفتح العلبة • اسحب بالماوس للتدوير';
+    }
+    hint.style.opacity = 1;
+  }
+}
+
+btn.addEventListener('click', () => setOpen(targetP === 0));
+
+const raycaster = new THREE.Raycaster();
+const ndc = new THREE.Vector2();
+function pick(ev, objs) {
+  const r = canvas.getBoundingClientRect();
+  ndc.set(((ev.clientX - r.left) / r.width) * 2 - 1, -((ev.clientY - r.top) / r.height) * 2 + 1);
+  raycaster.setFromCamera(ndc, camera);
+  return raycaster.intersectObjects(objs, true).length > 0;
+}
+
+let down = null;
+canvas.addEventListener('pointerdown', (e) => { down = { x: e.clientX, y: e.clientY }; });
+canvas.addEventListener('pointerup', (e) => {
+  if (!down) return;
+  const moved = Math.hypot(e.clientX - down.x, e.clientY - down.y);
+  down = null;
+  if (moved > 6) return;
+  if (targetP === 0 && p === 0 && pick(e, [stickerFront, stickerTop, glowRing])) setOpen(true);
+  else if (targetP === 1 && p === 1 && pick(e, [hero])) flipTarget += Math.PI;
+});
+canvas.addEventListener('pointermove', (e) => {
+  if (down) return;
+  const over = (targetP === 0 && p === 0 && pick(e, [stickerFront, stickerTop, glowRing])) ||
+               (targetP === 1 && p === 1 && pick(e, [hero]));
+  canvas.style.cursor = over ? 'pointer' : 'grab';
+});
+
+window.addEventListener('resize', () => {
+  const w = window.innerWidth, h = window.innerHeight;
+  renderer.setSize(w, h, false);
+  camera.aspect = w / h;
+  camera.fov = Math.min(75, 38 * Math.max(1, 1.45 / camera.aspect));
+  camera.updateProjectionMatrix();
+});
+window.dispatchEvent(new Event('resize'));
+
+const clock = new THREE.Clock();
+renderer.setAnimationLoop(() => {
+  const dt = Math.min(clock.getDelta(), 0.05);
+  const t = clock.elapsedTime;
+  if (p !== targetP) {
+    const step = dt / DURATION;
+    p = targetP > p ? Math.min(targetP, p + step) : Math.max(targetP, p - step);
+  }
+  flip += (flipTarget - flip) * Math.min(1, dt * 6);
+  applyState(t);
+  updateUI();
+  controls.update();
+  renderer.render(scene, camera);
+});
+
+if (new URLSearchParams(location.search).get('open') === '1') setOpen(true);
+if (new URLSearchParams(location.search).get('instant') === '1') { p = 1; targetP = 1; }
+const progressParam = parseFloat(new URLSearchParams(location.search).get('progress'));
+if (!isNaN(progressParam)) { p = progressParam; targetP = progressParam; }
+window.__evo = { setOpen, camera, controls, get p() { return p; } };
+</script>
+</body>
+</html>

@@ -11,9 +11,10 @@ import 'pages/products_page.dart';
 import 'pages/contact_page.dart';
 import 'pages/about_page.dart';
 import 'pages/related_page.dart';
+import 'widgets/video_showcase_section.dart';
 
 /// تطبيق متكامل:
-/// 1) صفحة رئيسية واحدة (Landing Page) بسكرول ناعم بين: المنتجات -> من نحن -> التواصل
+/// 1) صفحة رئيسية واحدة (Landing Page) بسكرول ناعم بين: المنتجات -> الفيديوهات -> من نحن -> التواصل
 /// 2) عارض الـ 3D يفتح فقط عند الضغط على Explore Products أو اختيار أي منتج
 class AppShell extends StatefulWidget {
   const AppShell({super.key});
@@ -27,6 +28,7 @@ class _AppShellState extends State<AppShell> {
 
   // مفاتيح أقسام الصفحة الرئيسية للتمرير الناعم
   final GlobalKey _productsKey = GlobalKey();
+  final GlobalKey _videosKey = GlobalKey();
   final GlobalKey _aboutKey = GlobalKey();
   final GlobalKey _contactKey = GlobalKey();
 
@@ -73,6 +75,7 @@ class _AppShellState extends State<AppShell> {
     final sections = [
       (AppPage.contact, _contactKey),
       (AppPage.about, _aboutKey),
+      (AppPage.videos, _videosKey),
       (AppPage.products, _productsKey),
     ];
 
@@ -162,6 +165,9 @@ class _AppShellState extends State<AppShell> {
     switch (p) {
       case AppPage.products:
         _scrollTo(_productsKey);
+        break;
+      case AppPage.videos:
+        _scrollTo(_videosKey);
         break;
       case AppPage.about:
         _scrollTo(_aboutKey);
@@ -259,9 +265,18 @@ class _AppShellState extends State<AppShell> {
                     key: _productsKey,
                     child: ProductsPage(onOpenRelated: openRelated),
                   ),
+                  const SizedBox(height: 50),
+
+                  // 2) قسم مكتبة الفيديوهات التفاعلية (Videos)
+                  Container(
+                    key: _videosKey,
+                    child: VideoShowcaseSection(
+                      onSelectDevice: (deviceName) => openRelated(deviceName),
+                    ),
+                  ),
                   const SizedBox(height: 60),
 
-                  // 2) قسم من نحن (About)
+                  // 3) قسم من نحن (About)
                   Container(
                     key: _aboutKey,
                     child: const AboutPage(),
@@ -467,6 +482,7 @@ class _AppShellState extends State<AppShell> {
         crossAxisAlignment: WrapCrossAlignment.center,
         children: [
           item('PRODUCTS', AppPage.products),
+          item('VIDEOS', AppPage.videos),
           item('ABOUT', AppPage.about),
           item('CONTACT', AppPage.contact),
         ],

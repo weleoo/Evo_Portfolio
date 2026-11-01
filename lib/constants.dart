@@ -11,7 +11,7 @@ const kBlueGradient = LinearGradient(
   colors: [kBlue, kLightBlue],
 );
 
-enum AppPage { products, contact, about, related }
+enum AppPage { products, videos, contact, about, related }
 
 class Product {
   final String name, spec, image, model; // model = مسار ملف الـ 3D (.glb)

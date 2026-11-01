@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
 
 import '../constants.dart';
+import '../models/video_item.dart';
 import '../widgets/common.dart';
+import '../widgets/youtube_dialog.dart';
 
 class ProductsPage extends StatelessWidget {
   final void Function(String) onOpenRelated;
@@ -76,6 +78,10 @@ class ProductsPage extends StatelessWidget {
         subtitle: 'Blood Glucose Monitoring System',
         image: 'assets/images/evo_plus.png',
         onTap: () => onOpenRelated('EVO PLUS'),
+        onWatchVideo: () {
+          final video = kShowcaseVideos.firstWhere((v) => v.deviceName == 'EVO PLUS');
+          showYouTubeVideoDialog(context, video);
+        },
         mobile: mobile,
       ),
     ]);
@@ -152,6 +158,7 @@ class _ProductTile extends StatelessWidget {
 class _Banner extends StatelessWidget {
   final String tagline, title, subtitle, image;
   final VoidCallback onTap;
+  final VoidCallback? onWatchVideo;
   final bool mobile;
   const _Banner({
     required this.tagline,
@@ -159,6 +166,7 @@ class _Banner extends StatelessWidget {
     required this.subtitle,
     required this.image,
     required this.onTap,
+    this.onWatchVideo,
     this.mobile = false,
   });
 
@@ -169,7 +177,7 @@ class _Banner extends StatelessWidget {
         child: ClipRRect(
           borderRadius: BorderRadius.circular(16),
           child: SizedBox(
-            height: mobile ? 205 : 225,
+            height: mobile ? 218 : 230,
             child: Stack(
               fit: StackFit.expand,
               children: [
@@ -200,9 +208,9 @@ class _Banner extends StatelessWidget {
                 ),
                 LayoutBuilder(
                   builder: (context, constraints) {
-                    final textWidth = constraints.maxWidth * (mobile ? 0.58 : 0.52);
+                    final textWidth = constraints.maxWidth * (mobile ? 0.62 : 0.55);
                     return Padding(
-                      padding: EdgeInsets.all(mobile ? 14 : 20),
+                      padding: EdgeInsets.all(mobile ? 12 : 20),
                       child: SizedBox(
                         width: textWidth,
                         child: Column(
@@ -219,14 +227,14 @@ class _Banner extends StatelessWidget {
                                   style: TextStyle(
                                     color: Colors.white,
                                     fontWeight: FontWeight.w600,
-                                    fontSize: mobile ? 12 : 14,
+                                    fontSize: mobile ? 11.5 : 14,
                                     height: 1.25,
                                     shadows: const [
                                       Shadow(color: Colors.black54, blurRadius: 6, offset: Offset(0, 1)),
                                     ],
                                   ),
                                 ),
-                                SizedBox(height: mobile ? 6 : 12),
+                                SizedBox(height: mobile ? 4 : 10),
                                 Text(
                                   title,
                                   style: TextStyle(
@@ -255,10 +263,19 @@ class _Banner extends StatelessWidget {
                                 ),
                               ],
                             ),
-                            GradientPill(
-                              label: 'Explore Products',
-                              arrow: true,
-                              onTap: onTap,
+                            Wrap(
+                              spacing: 8,
+                              runSpacing: 6,
+                              crossAxisAlignment: WrapCrossAlignment.center,
+                              children: [
+                                GradientPill(
+                                  label: 'Explore Products',
+                                  arrow: true,
+                                  onTap: onTap,
+                                ),
+                                if (onWatchVideo != null)
+                                  _VideoPill(onTap: onWatchVideo!, mobile: mobile),
+                              ],
                             ),
                           ],
                         ),
@@ -271,4 +288,58 @@ class _Banner extends StatelessWidget {
           ),
         ),
       );
+}
+
+class _VideoPill extends StatelessWidget {
+  final VoidCallback onTap;
+  final bool mobile;
+  const _VideoPill({required this.onTap, this.mobile = false});
+
+  @override
+  Widget build(BuildContext context) {
+    return InkWell(
+      onTap: onTap,
+      borderRadius: BorderRadius.circular(30),
+      child: Container(
+        padding: EdgeInsets.symmetric(
+          horizontal: mobile ? 10 : 13,
+          vertical: mobile ? 7 : 8,
+        ),
+        decoration: BoxDecoration(
+          color: const Color(0xFF101726).withValues(alpha: 0.92),
+          borderRadius: BorderRadius.circular(30),
+          border: Border.all(color: const Color(0xFFFF0033).withValues(alpha: 0.70), width: 1.2),
+          boxShadow: [
+            BoxShadow(
+              color: const Color(0xFFFF0033).withValues(alpha: 0.30),
+              blurRadius: 8,
+              offset: const Offset(0, 2),
+            ),
+          ],
+        ),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Container(
+              padding: const EdgeInsets.all(2.5),
+              decoration: const BoxDecoration(
+                color: Color(0xFFFF0033),
+                shape: BoxShape.circle,
+              ),
+              child: const Icon(Icons.play_arrow_rounded, color: Colors.white, size: 12),
+            ),
+            const SizedBox(width: 5),
+            Text(
+              'فيديو الجهاز',
+              style: TextStyle(
+                color: Colors.white,
+                fontSize: mobile ? 10.5 : 12,
+                fontWeight: FontWeight.w700,
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
 }

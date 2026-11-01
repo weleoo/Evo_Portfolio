@@ -121,13 +121,23 @@ class _VideoShowcaseSectionState extends State<VideoShowcaseSection> {
           LayoutBuilder(
             builder: (context, constraints) {
               final totalW = constraints.maxWidth;
-              final crossAxisCount = isMobile ? 1 : (isTablet ? 2 : 2);
-              final spacing = isMobile ? 14.0 : 18.0;
-              final cardW = (totalW - (spacing * (crossAxisCount - 1))) / crossAxisCount;
+              // عرض كارت متناسق فخم ومريح للعين على كل الشاشات بدون تمدد عملاق
+              final double cardW;
+              if (isMobile) {
+                cardW = totalW;
+              } else if (isTablet) {
+                cardW = (totalW - 14.0) / 2;
+              } else {
+                // شاشات اللاب توب والديسكتوب الكبيرة
+                final cols = totalW > 1150 ? 3 : 2;
+                const spacing = 18.0;
+                final idealW = (totalW - (spacing * (cols - 1))) / cols;
+                cardW = idealW.clamp(320.0, 460.0);
+              }
 
               return Wrap(
-                spacing: spacing,
-                runSpacing: spacing,
+                spacing: 16.0,
+                runSpacing: 16.0,
                 children: _filteredVideos.map((video) {
                   return SizedBox(
                     width: cardW,
@@ -243,10 +253,18 @@ class _VideoCardState extends State<_VideoCard> {
                     Image.network(
                       video.thumbnailUrl,
                       fit: BoxFit.cover,
-                      errorBuilder: (ctx, err, stack) => Container(
-                        color: const Color(0xFF1E2D4A),
-                        child: const Center(
-                          child: Icon(Icons.videocam_rounded, color: Colors.white30, size: 40),
+                      filterQuality: FilterQuality.high,
+                      isAntiAlias: true,
+                      errorBuilder: (ctx, err, stack) => Image.network(
+                        video.fallbackThumbnailUrl,
+                        fit: BoxFit.cover,
+                        filterQuality: FilterQuality.high,
+                        isAntiAlias: true,
+                        errorBuilder: (ctx2, err2, stack2) => Container(
+                          color: const Color(0xFF1E2D4A),
+                          child: const Center(
+                            child: Icon(Icons.videocam_rounded, color: Colors.white30, size: 40),
+                          ),
                         ),
                       ),
                     ),

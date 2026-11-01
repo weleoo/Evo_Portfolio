@@ -23,8 +23,9 @@ class VideoItem {
     required this.duration,
   });
 
-  String get thumbnailUrl => 'https://img.youtube.com/vi/$youtubeId/hqdefault.jpg';
-  String get maxThumbnailUrl => 'https://img.youtube.com/vi/$youtubeId/maxresdefault.jpg';
+  /// صورة الغلاف بأعلى دقة HD متوفرة من يوتيوب (1280x720) لمنع أي بكسلة على الشاشات الكبيرة
+  String get thumbnailUrl => 'https://img.youtube.com/vi/$youtubeId/maxresdefault.jpg';
+  String get fallbackThumbnailUrl => 'https://img.youtube.com/vi/$youtubeId/hqdefault.jpg';
   String get directUrl => isShort
       ? 'https://youtube.com/shorts/$youtubeId'
       : 'https://youtu.be/$youtubeId';

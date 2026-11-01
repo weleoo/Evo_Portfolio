@@ -75,99 +75,38 @@ class RelatedPage extends StatelessWidget {
             style: const TextStyle(fontSize: 11, color: Colors.black45)),
 
         if (item.name == 'EVO PLUS') ...[
-          const SizedBox(height: 14),
+          const SizedBox(height: 12),
           InkWell(
             onTap: () {
               final video = kShowcaseVideos.firstWhere((v) => v.deviceName == 'EVO PLUS');
               showYouTubeVideoDialog(context, video);
             },
-            borderRadius: BorderRadius.circular(16),
+            borderRadius: BorderRadius.circular(14),
             child: Container(
-              padding: EdgeInsets.symmetric(horizontal: mobile ? 14 : 20, vertical: 12),
+              padding: EdgeInsets.symmetric(horizontal: mobile ? 14 : 18, vertical: 10),
               decoration: BoxDecoration(
-                gradient: const LinearGradient(
-                  colors: [Color(0xFF101726), Color(0xFF1C2740)],
-                  begin: Alignment.centerLeft,
-                  end: Alignment.centerRight,
-                ),
-                borderRadius: BorderRadius.circular(16),
+                color: const Color(0xFF101726),
+                borderRadius: BorderRadius.circular(14),
                 border: Border.all(
-                  color: const Color(0xFFFF0033).withValues(alpha: 0.60),
-                  width: 1.4,
+                  color: const Color(0xFFFF0033).withValues(alpha: 0.50),
+                  width: 1.2,
                 ),
-                boxShadow: [
-                  BoxShadow(
-                    color: const Color(0xFFFF0033).withValues(alpha: 0.20),
-                    blurRadius: 18,
-                    offset: const Offset(0, 4),
-                  ),
-                ],
               ),
-              child: Row(
+              child: const Row(
+                mainAxisSize: MainAxisSize.min,
                 children: [
-                  Container(
-                    width: mobile ? 38 : 44,
-                    height: mobile ? 38 : 44,
-                    decoration: BoxDecoration(
-                      color: const Color(0xFFFF0033),
-                      shape: BoxShape.circle,
-                      boxShadow: [
-                        BoxShadow(
-                          color: const Color(0xFFFF0033).withValues(alpha: 0.45),
-                          blurRadius: 10,
-                          offset: const Offset(0, 2),
-                        ),
-                      ],
-                    ),
-                    child: Icon(
-                      Icons.play_arrow_rounded,
+                  Icon(Icons.play_circle_fill_rounded, color: Color(0xFFFF0033), size: 22),
+                  SizedBox(width: 8),
+                  Text(
+                    'فيديو جهاز EVO PLUS',
+                    style: TextStyle(
                       color: Colors.white,
-                      size: mobile ? 24 : 28,
+                      fontSize: 13,
+                      fontWeight: FontWeight.w700,
                     ),
                   ),
-                  const SizedBox(width: 14),
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          '▶ شاهد فيديو وشرح جهاز EVO PLUS على يوتيوب',
-                          style: TextStyle(
-                            color: Colors.white,
-                            fontSize: mobile ? 13 : 15,
-                            fontWeight: FontWeight.w800,
-                          ),
-                        ),
-                        const SizedBox(height: 2),
-                        Text(
-                          'استعراض تفاعلي سريع ومباشر للجهاز وطريقة استخدامه بالفيديو',
-                          style: TextStyle(
-                            color: Colors.white70,
-                            fontSize: mobile ? 10.5 : 12,
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                  const SizedBox(width: 8),
-                  Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-                    decoration: BoxDecoration(
-                      color: Colors.white.withValues(alpha: 0.10),
-                      borderRadius: BorderRadius.circular(20),
-                    ),
-                    child: const Row(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        Text(
-                          'مشاهدة',
-                          style: TextStyle(color: Colors.white, fontSize: 11, fontWeight: FontWeight.w700),
-                        ),
-                        SizedBox(width: 4),
-                        Icon(Icons.open_in_new_rounded, color: Colors.white, size: 12),
-                      ],
-                    ),
-                  ),
+                  SizedBox(width: 6),
+                  Icon(Icons.open_in_new_rounded, color: Colors.white54, size: 13),
                 ],
               ),
             ),

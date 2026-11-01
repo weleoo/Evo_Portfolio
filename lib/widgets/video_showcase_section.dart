@@ -4,8 +4,7 @@ import '../constants.dart';
 import '../models/video_item.dart';
 import 'youtube_dialog.dart';
 
-/// قسم مكتبة الفيديوهات التفاعلي (Video Showcase)
-/// متجاوب بالكامل مع اللاب توب، التابلت، والموبايل
+/// قسم مكتبة الفيديوهات بتصميم عصري وبسيط ومختصر
 class VideoShowcaseSection extends StatefulWidget {
   final void Function(String)? onSelectDevice;
   const VideoShowcaseSection({super.key, this.onSelectDevice});
@@ -34,120 +33,96 @@ class _VideoShowcaseSectionState extends State<VideoShowcaseSection> {
     return Container(
       width: double.infinity,
       padding: EdgeInsets.symmetric(
-        horizontal: isMobile ? 14 : 28,
-        vertical: isMobile ? 24 : 36,
+        horizontal: isMobile ? 14 : 24,
+        vertical: isMobile ? 18 : 26,
       ),
       decoration: BoxDecoration(
         color: const Color(0xFFF8FAFD),
-        borderRadius: BorderRadius.circular(isMobile ? 20 : 28),
+        borderRadius: BorderRadius.circular(isMobile ? 18 : 24),
         border: Border.all(color: const Color(0xFFE5EBF5), width: 1.2),
-        boxShadow: [
-          BoxShadow(
-            color: kBlue.withValues(alpha: 0.04),
-            blurRadius: 24,
-            offset: const Offset(0, 8),
-          ),
-        ],
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // ── رأس القسم (Section Header) ──
+          // ── رأس القسم مختصر وسريع ──
           Row(
-            crossAxisAlignment: CrossAxisAlignment.center,
             children: [
               Container(
-                width: isMobile ? 42 : 52,
-                height: isMobile ? 42 : 52,
+                width: isMobile ? 38 : 44,
+                height: isMobile ? 38 : 44,
                 decoration: BoxDecoration(
-                  gradient: const LinearGradient(
-                    colors: [Color(0xFFFF0033), Color(0xFFCC0000)],
-                    begin: Alignment.topLeft,
-                    end: Alignment.bottomRight,
-                  ),
-                  borderRadius: BorderRadius.circular(isMobile ? 12 : 16),
+                  color: const Color(0xFFFF0033),
+                  borderRadius: BorderRadius.circular(isMobile ? 10 : 12),
                   boxShadow: [
                     BoxShadow(
-                      color: const Color(0xFFFF0033).withValues(alpha: 0.35),
-                      blurRadius: 14,
-                      offset: const Offset(0, 4),
+                      color: const Color(0xFFFF0033).withValues(alpha: 0.30),
+                      blurRadius: 10,
+                      offset: const Offset(0, 3),
                     ),
                   ],
                 ),
                 child: const Icon(
                   Icons.play_arrow_rounded,
                   color: Colors.white,
-                  size: 28,
+                  size: 26,
                 ),
               ),
-              const SizedBox(width: 14),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
+              const SizedBox(width: 12),
+              Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    'Videos',
+                    style: TextStyle(
+                      fontSize: isMobile ? 22 : 26,
+                      fontWeight: FontWeight.w900,
+                      color: kNavy,
+                      letterSpacing: -0.4,
+                    ),
+                  ),
+                  const Text(
+                    'فيديوهات أجهزة ومنتجات EVO MED',
+                    style: TextStyle(
+                      fontSize: 11.5,
+                      color: Colors.black45,
+                      fontWeight: FontWeight.w500,
+                    ),
+                  ),
+                ],
+              ),
+              const Spacer(),
+              if (!isMobile)
+                Wrap(
+                  spacing: 6,
                   children: [
-                    Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 3),
-                      decoration: BoxDecoration(
-                        color: kBlue.withValues(alpha: 0.10),
-                        borderRadius: BorderRadius.circular(20),
-                      ),
-                      child: const Text(
-                        'معرض الفيديو • VIDEO SHOWCASE',
-                        style: TextStyle(
-                          color: kBlue,
-                          fontSize: 10.5,
-                          fontWeight: FontWeight.w800,
-                          letterSpacing: 0.5,
-                        ),
-                      ),
-                    ),
-                    const SizedBox(height: 4),
-                    Text(
-                      'مكتبة الفيديوهات والشروحات العملية',
-                      style: TextStyle(
-                        fontSize: isMobile ? 20 : 26,
-                        fontWeight: FontWeight.w900,
-                        color: kNavy,
-                        letterSpacing: -0.3,
-                      ),
-                    ),
+                    _filterChip('All', 'الكل'),
+                    _filterChip('Devices', 'الأجهزة'),
+                    _filterChip('General', 'عام'),
                   ],
                 ),
-              ),
             ],
           ),
 
-          const SizedBox(height: 10),
-          Text(
-            'شاهد استعراض أجهزة EVO MED الطبية بالفيديو التفاعلي وطريقة إجراء الاختبارات المعملية بدقة واحترافية.',
-            style: TextStyle(
-              fontSize: isMobile ? 12 : 14,
-              color: Colors.black54,
-              height: 1.4,
+          if (isMobile) ...[
+            const SizedBox(height: 14),
+            Wrap(
+              spacing: 6,
+              children: [
+                _filterChip('All', 'الكل'),
+                _filterChip('Devices', 'الأجهزة'),
+                _filterChip('General', 'عام'),
+              ],
             ),
-          ),
+          ],
 
-          const SizedBox(height: 20),
+          const SizedBox(height: 18),
 
-          // ── شريط فلاتر التصنيف (Category Filters) ──
-          Wrap(
-            spacing: 8,
-            runSpacing: 8,
-            children: [
-              _filterChip('All', 'جميع الفيديوهات (All)'),
-              _filterChip('Devices', 'شروحات الأجهزة (Devices)'),
-              _filterChip('General', 'فيديوهات عامة ومعملية (General)'),
-            ],
-          ),
-
-          const SizedBox(height: 24),
-
-          // ── شبكة كروت الفيديوهات (Responsive Video Grid) ──
+          // ── شبكة كروت الفيديوهات ──
           LayoutBuilder(
             builder: (context, constraints) {
               final totalW = constraints.maxWidth;
               final crossAxisCount = isMobile ? 1 : (isTablet ? 2 : 2);
-              final spacing = isMobile ? 16.0 : 20.0;
+              final spacing = isMobile ? 14.0 : 18.0;
               final cardW = (totalW - (spacing * (crossAxisCount - 1))) / crossAxisCount;
 
               return Wrap(
@@ -178,27 +153,18 @@ class _VideoShowcaseSectionState extends State<VideoShowcaseSection> {
     final selected = _selectedCategory == id;
     return InkWell(
       onTap: () => setState(() => _selectedCategory = id),
-      borderRadius: BorderRadius.circular(30),
+      borderRadius: BorderRadius.circular(20),
       child: AnimatedContainer(
-        duration: const Duration(milliseconds: 200),
-        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+        duration: const Duration(milliseconds: 180),
+        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 6),
         decoration: BoxDecoration(
           gradient: selected ? kBlueGradient : null,
           color: selected ? null : Colors.white,
-          borderRadius: BorderRadius.circular(30),
+          borderRadius: BorderRadius.circular(20),
           border: Border.all(
             color: selected ? Colors.transparent : const Color(0xFFD6DFEC),
             width: 1,
           ),
-          boxShadow: selected
-              ? [
-                  BoxShadow(
-                    color: kBlue.withValues(alpha: 0.28),
-                    blurRadius: 10,
-                    offset: const Offset(0, 3),
-                  ),
-                ]
-              : null,
         ),
         child: Text(
           label,
@@ -245,22 +211,22 @@ class _VideoCardState extends State<_VideoCard> {
       child: GestureDetector(
         onTap: widget.onTap,
         child: AnimatedContainer(
-          duration: const Duration(milliseconds: 220),
-          transform: Matrix4.translationValues(0.0, _hovered ? -5.0 : 0.0, 0.0),
+          duration: const Duration(milliseconds: 200),
+          transform: Matrix4.translationValues(0.0, _hovered ? -4.0 : 0.0, 0.0),
           decoration: BoxDecoration(
             color: Colors.white,
-            borderRadius: BorderRadius.circular(18),
+            borderRadius: BorderRadius.circular(16),
             border: Border.all(
               color: _hovered ? kBlue : const Color(0xFFE2E8F2),
-              width: _hovered ? 1.8 : 1.2,
+              width: _hovered ? 1.6 : 1.0,
             ),
             boxShadow: [
               BoxShadow(
                 color: _hovered
-                    ? kBlue.withValues(alpha: 0.16)
-                    : Colors.black.withValues(alpha: 0.05),
-                blurRadius: _hovered ? 20 : 12,
-                offset: Offset(0, _hovered ? 8 : 4),
+                    ? kBlue.withValues(alpha: 0.14)
+                    : Colors.black.withValues(alpha: 0.04),
+                blurRadius: _hovered ? 16 : 8,
+                offset: Offset(0, _hovered ? 6 : 2),
               ),
             ],
           ),
@@ -268,7 +234,7 @@ class _VideoCardState extends State<_VideoCard> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              // ── الصورة المصغرة (Thumbnail with Overlay) ──
+              // ── الصورة المصغرة ──
               AspectRatio(
                 aspectRatio: 16 / 9,
                 child: Stack(
@@ -280,12 +246,11 @@ class _VideoCardState extends State<_VideoCard> {
                       errorBuilder: (ctx, err, stack) => Container(
                         color: const Color(0xFF1E2D4A),
                         child: const Center(
-                          child: Icon(Icons.videocam_rounded, color: Colors.white30, size: 48),
+                          child: Icon(Icons.videocam_rounded, color: Colors.white30, size: 40),
                         ),
                       ),
                     ),
 
-                    // تدرج ظل سينمائي يحمي النصوص والأيقونات
                     Positioned.fill(
                       child: Container(
                         decoration: BoxDecoration(
@@ -293,117 +258,81 @@ class _VideoCardState extends State<_VideoCard> {
                             begin: Alignment.topCenter,
                             end: Alignment.bottomCenter,
                             colors: [
-                              Colors.black.withValues(alpha: 0.35),
+                              Colors.black.withValues(alpha: 0.25),
                               Colors.transparent,
-                              Colors.black.withValues(alpha: 0.65),
+                              Colors.black.withValues(alpha: 0.55),
                             ],
-                            stops: const [0.0, 0.45, 1.0],
+                            stops: const [0.0, 0.5, 1.0],
                           ),
                         ),
                       ),
                     ),
 
-                    // شارة التاج (EVO Device أو General)
+                    // شارة التاج
                     Positioned(
-                      top: 10,
-                      left: 10,
+                      top: 8,
+                      left: 8,
                       child: Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 4),
+                        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
                         decoration: BoxDecoration(
                           color: isDevice ? const Color(0xFFCF1F2A) : kBlue,
-                          borderRadius: BorderRadius.circular(8),
-                          boxShadow: const [
-                            BoxShadow(color: Colors.black38, blurRadius: 6, offset: Offset(0, 2)),
-                          ],
+                          borderRadius: BorderRadius.circular(6),
                         ),
                         child: Text(
                           video.tag,
                           style: const TextStyle(
                             color: Colors.white,
-                            fontSize: 10.5,
+                            fontSize: 10,
                             fontWeight: FontWeight.w800,
-                            letterSpacing: 0.4,
                           ),
                         ),
                       ),
                     ),
 
-                    // شارة يوتيوب / شورتس
+                    // شارة المدة
                     Positioned(
-                      top: 10,
-                      right: 10,
+                      bottom: 8,
+                      right: 8,
                       child: Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                        padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2.5),
                         decoration: BoxDecoration(
-                          color: Colors.black.withValues(alpha: 0.65),
-                          borderRadius: BorderRadius.circular(8),
+                          color: Colors.black.withValues(alpha: 0.75),
+                          borderRadius: BorderRadius.circular(4),
                         ),
-                        child: Row(
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            Icon(
-                              video.isShort ? Icons.bolt_rounded : Icons.play_arrow_rounded,
-                              color: const Color(0xFFFF0033),
-                              size: 14,
-                            ),
-                            const SizedBox(width: 3),
-                            Text(
-                              video.isShort ? 'Shorts' : 'Video',
-                              style: const TextStyle(
-                                color: Colors.white,
-                                fontSize: 10,
-                                fontWeight: FontWeight.w700,
-                              ),
-                            ),
-                          ],
+                        child: Text(
+                          video.duration,
+                          style: const TextStyle(
+                            color: Colors.white,
+                            fontSize: 9.5,
+                            fontWeight: FontWeight.w600,
+                          ),
                         ),
                       ),
                     ),
 
-                    // زر التشغيل المركزي الكبير المتفاعل (Animated Play Button)
+                    // زر التشغيل المركزي
                     Center(
                       child: AnimatedScale(
-                        duration: const Duration(milliseconds: 200),
-                        scale: _hovered ? 1.15 : 1.0,
+                        duration: const Duration(milliseconds: 180),
+                        scale: _hovered ? 1.12 : 1.0,
                         child: Container(
-                          width: widget.mobile ? 48 : 56,
-                          height: widget.mobile ? 48 : 56,
+                          width: widget.mobile ? 44 : 50,
+                          height: widget.mobile ? 44 : 50,
                           decoration: BoxDecoration(
                             color: const Color(0xFFFF0033),
                             shape: BoxShape.circle,
                             boxShadow: [
                               BoxShadow(
-                                color: const Color(0xFFFF0033).withValues(alpha: 0.50),
-                                blurRadius: 18,
-                                spreadRadius: 2,
+                                color: const Color(0xFFFF0033).withValues(alpha: 0.45),
+                                blurRadius: 14,
+                                spreadRadius: 1,
                               ),
                             ],
                           ),
                           child: const Icon(
                             Icons.play_arrow_rounded,
                             color: Colors.white,
-                            size: 32,
-                          ),
-                        ),
-                      ),
-                    ),
-
-                    // شارة المدة بالأسفل
-                    Positioned(
-                      bottom: 10,
-                      right: 10,
-                      child: Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 3),
-                        decoration: BoxDecoration(
-                          color: Colors.black.withValues(alpha: 0.75),
-                          borderRadius: BorderRadius.circular(6),
-                        ),
-                        child: Text(
-                          video.duration,
-                          style: const TextStyle(
-                            color: Colors.white,
-                            fontSize: 10,
-                            fontWeight: FontWeight.w600,
+                            size: 28,
                           ),
                         ),
                       ),
@@ -412,9 +341,9 @@ class _VideoCardState extends State<_VideoCard> {
                 ),
               ),
 
-              // ── تفاصيل الفيديو وأزرار التفاعل ──
+              // ── تفاصيل وأزرار مختصرة ──
               Padding(
-                padding: EdgeInsets.all(widget.mobile ? 12 : 16),
+                padding: EdgeInsets.all(widget.mobile ? 11 : 13),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
@@ -423,7 +352,7 @@ class _VideoCardState extends State<_VideoCard> {
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
                       style: TextStyle(
-                        fontSize: widget.mobile ? 14.5 : 16,
+                        fontSize: widget.mobile ? 14 : 15,
                         fontWeight: FontWeight.w800,
                         color: kNavy,
                       ),
@@ -434,53 +363,31 @@ class _VideoCardState extends State<_VideoCard> {
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
                       style: const TextStyle(
-                        fontSize: 11,
+                        fontSize: 10.5,
                         color: Colors.black45,
                         fontWeight: FontWeight.w500,
                       ),
                     ),
-                    const SizedBox(height: 8),
-                    Text(
-                      video.description,
-                      maxLines: 2,
-                      overflow: TextOverflow.ellipsis,
-                      style: TextStyle(
-                        fontSize: widget.mobile ? 11.5 : 12.5,
-                        color: const Color(0xFF4A5568),
-                        height: 1.35,
-                      ),
-                    ),
-                    const SizedBox(height: 14),
-
-                    // شريط الأزرار التفاعلية
+                    const SizedBox(height: 10),
                     Row(
                       children: [
-                        // زر تشغيل الفيديو
                         Expanded(
                           child: InkWell(
                             onTap: widget.onTap,
-                            borderRadius: BorderRadius.circular(10),
+                            borderRadius: BorderRadius.circular(8),
                             child: Container(
-                              padding: const EdgeInsets.symmetric(vertical: 9),
+                              padding: const EdgeInsets.symmetric(vertical: 7.5),
                               decoration: BoxDecoration(
                                 gradient: kBlueGradient,
-                                borderRadius: BorderRadius.circular(10),
-                                boxShadow: [
-                                  BoxShadow(
-                                    color: kBlue.withValues(alpha: 0.25),
-                                    blurRadius: 8,
-                                    offset: const Offset(0, 2),
-                                  ),
-                                ],
+                                borderRadius: BorderRadius.circular(8),
                               ),
                               child: const Row(
                                 mainAxisAlignment: MainAxisAlignment.center,
                                 children: [
-                                  Icon(Icons.play_circle_outline_rounded,
-                                      color: Colors.white, size: 16),
-                                  SizedBox(width: 6),
+                                  Icon(Icons.play_arrow_rounded, color: Colors.white, size: 16),
+                                  SizedBox(width: 4),
                                   Text(
-                                    'شاهد الفيديو الآن',
+                                    'تشغيل',
                                     style: TextStyle(
                                       color: Colors.white,
                                       fontSize: 12,
@@ -492,27 +399,25 @@ class _VideoCardState extends State<_VideoCard> {
                             ),
                           ),
                         ),
-
-                        // زر فحص الـ 3D للجهاز إذا كان مرتبط بجهاز
                         if (widget.onInspectDevice != null) ...[
                           const SizedBox(width: 8),
                           InkWell(
                             onTap: widget.onInspectDevice,
-                            borderRadius: BorderRadius.circular(10),
+                            borderRadius: BorderRadius.circular(8),
                             child: Container(
-                              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 9),
+                              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 7.5),
                               decoration: BoxDecoration(
                                 color: kGrey,
-                                borderRadius: BorderRadius.circular(10),
+                                borderRadius: BorderRadius.circular(8),
                                 border: Border.all(color: const Color(0xFFD3DDEB)),
                               ),
                               child: const Row(
                                 mainAxisSize: MainAxisSize.min,
                                 children: [
-                                  Icon(Icons.view_in_ar_rounded, color: kNavy, size: 15),
-                                  SizedBox(width: 4),
+                                  Icon(Icons.view_in_ar_rounded, color: kNavy, size: 14),
+                                  SizedBox(width: 3),
                                   Text(
-                                    'عرض 3D',
+                                    '3D',
                                     style: TextStyle(
                                       color: kNavy,
                                       fontSize: 11.5,

@@ -4,7 +4,7 @@ class VideoItem {
   final String title;
   final String englishTitle;
   final String description;
-  final String category; // 'All', 'Devices', 'General', 'Rapid Tests'
+  final String category; // 'All', 'Devices', 'General'
   final String tag;
   final bool isShort;
   final String? deviceName; // 'EVO PLUS', etc.
@@ -32,16 +32,15 @@ class VideoItem {
       'https://www.youtube.com/embed/$youtubeId?autoplay=1&rel=0&modestbranding=1';
 }
 
-/// قائمة الفيديوهات الخاصة بـ EVO MED (العامة والأجهزة)
+/// قائمة الفيديوهات
 const kShowcaseVideos = [
   VideoItem(
     id: 'evo-plus-glucose-short',
     youtubeId: '4RDgSuPFSSc',
-    title: 'جهاز قياس السكر بالدم EVO PLUS',
-    englishTitle: 'EVO MED EVO PLUS Blood Glucose System',
-    description:
-        'استعراض تفاعلي وشرح عملي لجهاز قياس السكر الذكي EVO PLUS ومميزات الدقة وسرعة القراءة.',
-    category: 'الأجهزة • Devices',
+    title: 'EVO PLUS • جهاز قياس السكر',
+    englishTitle: 'EVO PLUS Blood Glucose System',
+    description: 'شرح عملي لجهاز قياس السكر EVO PLUS.',
+    category: 'الأجهزة',
     tag: 'EVO PLUS',
     isShort: true,
     deviceName: 'EVO PLUS',
@@ -50,11 +49,10 @@ const kShowcaseVideos = [
   VideoItem(
     id: 'lab-instruments-kit',
     youtubeId: '5GauWnPZva4',
-    title: 'استعراض أدوات ومجموعات المعمل والعيادة',
-    englishTitle: 'Medical & Clinical Equipment & Kit Overview',
-    description:
-        'شرح مفصل لمعدات وأدوات التشخيص المعملي والعيادات وطريقة استخدام المجموعات الطبية.',
-    category: 'فيديوهات عامة • General',
+    title: 'الأدوات والمعدات الطبية المعملية',
+    englishTitle: 'Medical & Clinical Equipment Kit',
+    description: 'استعراض الأدوات والمجموعات الطبية.',
+    category: 'عام',
     tag: 'CLINICAL KIT',
     isShort: false,
     duration: '12:45',

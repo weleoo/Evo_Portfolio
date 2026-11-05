@@ -28,8 +28,8 @@ class _EvoBox3DState extends State<EvoBox3D> {
             : 'box.html';
     ui_web.platformViewRegistry.registerViewFactory(_viewType, (int _) {
       return html.IFrameElement()
-        // مسار الـ asset على الويب: assets/ + اسم الـ asset
-        ..src = 'assets/assets/3d/$htmlFile?p=${widget.productId}'
+        // مسار الـ asset على الويب مع كاسر كاش فوري لمنع أي كاش في متصفح العميل
+        ..src = 'assets/assets/3d/$htmlFile?p=${widget.productId}&v=4&t=${DateTime.now().millisecondsSinceEpoch}'
         ..style.border = 'none'
         ..style.width = '100%'
         ..style.height = '100%'

@@ -38,11 +38,13 @@ const PRODUCTS = {
   hpylori_ag: { dir: 'textures/hpylori_ag/', L: 4.35, W: 3.2, H: 2.0, flap: 0.12, stickerX: 0.0 },
   ctni:       { dir: 'textures/ctni/',       L: 4.35, W: 3.2, H: 2.0, flap: 0.12, stickerX: 0.0 },
 };
-const key = new URLSearchParams(location.search).get('p') || 'hpylori_ag';
+const params = new URLSearchParams(location.search);
+const key = params.get('p') || 'hpylori_ag';
 if (key === 'evo_plus') {
   window.location.replace('evo_plus.html' + window.location.search);
 }
 const cfg = PRODUCTS[key] || PRODUCTS.hpylori_ag;
+const autoOpen = params.get('open') === '1';
 const { L, W, H } = cfg;
 const T = 0.04;                 // سمك الكرتون
 const FH = H * cfg.flap;        // ارتفاع اللسان الأمامي للغطا
@@ -307,7 +309,7 @@ const seg = (p, a, b) => clamp01((p - a) / (b - a));
 const ease = (t) => (t < 0.5 ? 4 * t * t * t : 1 - Math.pow(-2 * t + 2, 3) / 2);
 const lerp = (a, b, t) => a + (b - a) * t;
 
-let p = 0, targetP = 0;                           // 0 = مقفولة ، 1 = مفتوحة والكارت بره
+let p = autoOpen ? 1 : 0, targetP = autoOpen ? 1 : 0;                           // 0 = مقفولة ، 1 = مفتوحة والكارت بره
 let flipTarget = 0, flip = 0;
 const DURATION = 4.8;                             // ثواني للفتح الكامل
 const LID_OPEN = THREE.MathUtils.degToRad(112);
@@ -452,6 +454,10 @@ function updateUI() {
   }
 }
 btn.addEventListener('click', () => setOpen(targetP === 0));
+if (autoOpen) {
+  btn.textContent = 'Close box';
+  hint.textContent = 'Click the card to flip it • Drag to rotate';
+}
 
 let down = null;
 canvas.addEventListener('pointerdown', (e) => { down = { x: e.clientX, y: e.clientY }; });

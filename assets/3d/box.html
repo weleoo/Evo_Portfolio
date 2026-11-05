@@ -45,6 +45,7 @@ if (key === 'evo_plus') {
 }
 const cfg = PRODUCTS[key] || PRODUCTS.hpylori_ag;
 const autoOpen = params.get('open') === '1';
+const autoFlip = params.get('flip') === '1';
 const { L, W, H } = cfg;
 const T = 0.04;                 // سمك الكرتون
 const FH = H * cfg.flap;        // ارتفاع اللسان الأمامي للغطا
@@ -99,7 +100,7 @@ const manager = new THREE.LoadingManager(
 const loader = new THREE.TextureLoader(manager);
 const aniso = renderer.capabilities.getMaxAnisotropy();
 function tex(name) {
-  const t = loader.load(cfg.dir + name + '?v=4');
+  const t = loader.load(cfg.dir + name + '?v=5');
   t.colorSpace = THREE.SRGBColorSpace;
   t.anisotropy = aniso;
   return t;
@@ -310,7 +311,7 @@ const ease = (t) => (t < 0.5 ? 4 * t * t * t : 1 - Math.pow(-2 * t + 2, 3) / 2);
 const lerp = (a, b, t) => a + (b - a) * t;
 
 let p = autoOpen ? 1 : 0, targetP = autoOpen ? 1 : 0;                           // 0 = مقفولة ، 1 = مفتوحة والكارت بره
-let flipTarget = 0, flip = 0;
+let flipTarget = autoFlip ? Math.PI : 0, flip = autoFlip ? Math.PI : 0;
 const DURATION = 4.8;                             // ثواني للفتح الكامل
 const LID_OPEN = THREE.MathUtils.degToRad(112);
 

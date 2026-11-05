@@ -86,7 +86,7 @@ const loader = new THREE.TextureLoader(manager);
 const aniso = renderer.capabilities.getMaxAnisotropy();
 
 function tex(name) {
-  const t = loader.load('textures/ctni/' + name + '?v=3');
+  const t = loader.load('textures/ctni/' + name + '?v=4');
   t.colorSpace = THREE.SRGBColorSpace;
   t.anisotropy = aniso;
   return t;

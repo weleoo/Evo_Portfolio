@@ -99,7 +99,7 @@ const manager = new THREE.LoadingManager(
 const loader = new THREE.TextureLoader(manager);
 const aniso = renderer.capabilities.getMaxAnisotropy();
 function tex(name) {
-  const t = loader.load(cfg.dir + name);
+  const t = loader.load(cfg.dir + name + '?v=3');
   t.colorSpace = THREE.SRGBColorSpace;
   t.anisotropy = aniso;
   return t;

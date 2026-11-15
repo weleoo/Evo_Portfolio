@@ -114,7 +114,7 @@ const manager = new THREE.LoadingManager(
 const loader = new THREE.TextureLoader(manager);
 const aniso = renderer.capabilities.getMaxAnisotropy();
 function tex(name) {
-  const t = loader.load(cfg.dir + name + '?v=7');
+  const t = loader.load(cfg.dir + name + '?v=8');
   t.colorSpace = THREE.SRGBColorSpace;
   t.anisotropy = aniso;
   return t;
@@ -219,11 +219,13 @@ for (let x = divX + 0.12; x < L / 2 - T - 0.05; x += 0.1) {
   inner.add(m);
 }
 
-// الكارت البطل
-const pouchFront = tex('pouch_front.jpg'), pouchBack = tex('pouch_back.jpg');
-const heroMats = [pouchMat, pouchMat, pouchMat, pouchMat,
-  std({ map: pouchFront, roughness: 0.3, metalness: 0.1 }),
-  std({ map: pouchBack, roughness: 0.3, metalness: 0.1 })];
+// الكارت البطل وكيس الفويل
+const pouchSealedTex = tex('pouch_front.jpg');
+const pouchOpenTex = tex('pouch_front_open.jpg');
+const pouchBack = tex('pouch_back.jpg');
+const heroFrontMat = std({ map: pouchSealedTex, roughness: 0.3, metalness: 0.1 });
+const heroBackMat = std({ map: pouchBack, roughness: 0.3, metalness: 0.1 });
+const heroMats = [pouchMat, pouchMat, pouchMat, pouchMat, heroFrontMat, heroBackMat];
 const hero = new THREE.Mesh(new THREE.BoxGeometry(PL, PH, PT), heroMats);
 hero.castShadow = true;
 const heroPivot = new THREE.Group();
@@ -448,29 +450,47 @@ function applyState(time) {
   heroPivot.rotation.y = lerp(Math.PI / 2, 0, move);
   heroPivot.rotation.x = -0.1 * move;
 
-  // ──────────────── 4) فتح الكيس واستخراج كاسيت Hpag ────────────────
+  // ──────────────── 4) فتح الكيس واستخراج الكارت ثم سقوط الكيس على الأرض ────────────────
   const s_open = ease(pouchOpen);
   if (move > 0.85) {
-    hero.position.x = lerp(0, -1.35, s_open);
-    hero.position.y = lerp(0, 0.12, s_open);
-    hero.position.z = lerp(0, -0.22, s_open);
-    hero.rotation.y = lerp(0, 0.16, s_open) + flip;
-    hero.rotation.x = lerp(0, -0.04, s_open);
-    hero.rotation.z = lerp(0, -0.04, s_open);
+    // تبديل ملمس الكيس إلى كيس مفتوح بمجرد بدء الفتح
+    if (s_open > 0.04) {
+      if (heroFrontMat.map !== pouchOpenTex) {
+        heroFrontMat.map = pouchOpenTex;
+        heroFrontMat.needsUpdate = true;
+      }
+    } else {
+      if (heroFrontMat.map !== pouchSealedTex) {
+        heroFrontMat.map = pouchSealedTex;
+        heroFrontMat.needsUpdate = true;
+      }
+    }
 
+    // المرحلة 1: خروج الكارت عمودياً من فوهة الكيس المفتوح (0.0 -> 0.35)
+    const s_extract = ease(seg(s_open, 0.0, 0.35));
+
+    // المرحلة 2: سقوط الكيس الفارغ بفعل الجاذبية على الأرضية بجانب العلبة (0.28 -> 0.75)
+    const s_drop = ease(seg(s_open, 0.28, 0.75));
+    hero.position.x = lerp(0, -2.60, s_drop);
+    hero.position.y = lerp(0, -4.07, s_drop);
+    hero.position.z = lerp(0, -0.20, s_drop);
+    hero.rotation.x = lerp(0, -Math.PI / 2 + 0.08, s_drop);
+    hero.rotation.y = lerp(0, 0.20, s_drop) + flip;
+    hero.rotation.z = lerp(0, 0.16, s_drop);
+
+    // المرحلة 3: انزلاق الكارت الطبي للمقدمة والسنتر ليكون البطل الأساسي (0.35 -> 1.0)
     if (s_open > 0.01) {
       cassette.visible = true;
-      const s_up = ease(seg(s_open, 0.0, 0.45));
-      const s_glide = ease(seg(s_open, 0.35, 1.0));
-      
-      const casX = lerp(-1.35, 1.35, s_glide);
-      const casY = lerp(0.12, 0.82, s_up) + lerp(0, -0.52, s_glide) + (s_open > 0.98 ? Math.sin(time * 2.2) * 0.02 : 0);
-      const casZ = lerp(-0.22, 0.58, s_glide);
-      
+      const s_center = ease(seg(s_open, 0.35, 1.0));
+
+      const casX = lerp(0.0, -0.25, s_center);
+      const casY = lerp(0.0, 1.45, s_extract) + lerp(0, -1.85, s_center) + (s_open > 0.98 ? Math.sin(time * 2.2) * 0.025 : 0);
+      const casZ = lerp(0.04, 1.65, s_center);
+
       cassette.position.set(casX, casY, casZ);
-      cassette.rotation.x = lerp(0, -0.10, s_glide);
-      cassette.rotation.y = lerp(0.16, -0.14, s_glide) + casFlip;
-      cassette.rotation.z = lerp(-0.04, 0.03, s_glide);
+      cassette.rotation.x = lerp(-0.06, -0.20, s_center);
+      cassette.rotation.y = casFlip;
+      cassette.rotation.z = lerp(0.0, 0.02, s_center);
     } else {
       cassette.visible = false;
       cassette.position.set(0, 0, 0);
@@ -478,6 +498,10 @@ function applyState(time) {
   } else {
     hero.position.set(0, 0, 0);
     hero.rotation.set(0, flip, 0);
+    if (heroFrontMat.map !== pouchSealedTex) {
+      heroFrontMat.map = pouchSealedTex;
+      heroFrontMat.needsUpdate = true;
+    }
     cassette.visible = false;
   }
 
@@ -528,7 +552,7 @@ function updateUI() {
       hint.textContent = `انقر على الكيس لفتحه واستخراج كارت ${testName} • اسحب للتدوير 360°`;
     } else {
       pouchBtn.textContent = '↩️ إعادة الكارت للكيس';
-      hint.textContent = 'انقر على الكارت لقلبه • انقر على الكيس لقلبه • اسحب للتدوير 360°';
+      hint.textContent = 'انقر على الكارت لقلبه • انقر على الكيس لإعادته • اسحب للتدوير 360°';
     }
   } else {
     btn.textContent = 'Open box';
@@ -565,8 +589,9 @@ canvas.addEventListener('pointerup', (e) => {
       if (targetPouchOpen === 0) {
         targetPouchOpen = 1;
       } else {
-        flipTarget += Math.PI;
+        targetPouchOpen = 0; // النقر على الكيس وهو على الأرض يعيده للكارت
       }
+      updateUI();
     }
   }
 });

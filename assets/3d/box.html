@@ -114,7 +114,7 @@ const manager = new THREE.LoadingManager(
 const loader = new THREE.TextureLoader(manager);
 const aniso = renderer.capabilities.getMaxAnisotropy();
 function tex(name) {
-  const t = loader.load(cfg.dir + name + '?v=8');
+  const t = loader.load(cfg.dir + name + '?v=9');
   t.colorSpace = THREE.SRGBColorSpace;
   t.anisotropy = aniso;
   return t;
@@ -219,15 +219,46 @@ for (let x = divX + 0.12; x < L / 2 - T - 0.05; x += 0.1) {
   inner.add(m);
 }
 
-// الكارت البطل وكيس الفويل
-const pouchSealedTex = tex('pouch_front.jpg');
-const pouchOpenTex = tex('pouch_front_open.jpg');
-const pouchBack = tex('pouch_back.jpg');
-const heroFrontMat = std({ map: pouchSealedTex, roughness: 0.3, metalness: 0.1 });
-const heroBackMat = std({ map: pouchBack, roughness: 0.3, metalness: 0.1 });
-const heroMats = [pouchMat, pouchMat, pouchMat, pouchMat, heroFrontMat, heroBackMat];
-const hero = new THREE.Mesh(new THREE.BoxGeometry(PL, PH, PT), heroMats);
-hero.castShadow = true;
+// الكارت البطل وكيس الفويل القابل للتمزيق والرمي الحركي
+const tearW = 0.38;
+const bodyW = PL - tearW; // 2.42
+const foilInnerMat = std({ color: 0xd8dde4, roughness: 0.22, metalness: 0.88 }); // باطن الفويل الألومنيوم اللامع
+
+const bodyFrontTex = tex('pouch_body_front.jpg');
+const bodyBackTex = tex('pouch_body_back.jpg');
+const stripFrontTex = tex('pouch_strip_front.jpg');
+const stripBackTex = tex('pouch_strip_back.jpg');
+
+const bodyMats = [
+  pouchMat, // +X right
+  foilInnerMat, // -X left (فوهة التمزيق الألومنيوم)
+  pouchMat, // +Y top
+  pouchMat, // -Y bottom
+  std({ map: bodyFrontTex, roughness: 0.3, metalness: 0.14 }), // +Z front
+  std({ map: bodyBackTex, roughness: 0.3, metalness: 0.14 })   // -Z back
+];
+
+const stripMats = [
+  foilInnerMat, // +X right (حافة التمزق المقابلة)
+  pouchMat, // -X left
+  pouchMat, // +Y top
+  pouchMat, // -Y bottom
+  std({ map: stripFrontTex, roughness: 0.3, metalness: 0.14 }), // +Z front
+  std({ map: stripBackTex, roughness: 0.3, metalness: 0.14 })   // -Z back
+];
+
+const pouchBody = new THREE.Mesh(new THREE.BoxGeometry(bodyW, PH, PT), bodyMats);
+pouchBody.position.set(tearW / 2, 0, 0);
+pouchBody.castShadow = pouchBody.receiveShadow = true;
+
+const pouchStrip = new THREE.Mesh(new THREE.BoxGeometry(tearW, PH, PT), stripMats);
+pouchStrip.position.set(-PL / 2 + tearW / 2, 0, 0);
+pouchStrip.castShadow = pouchStrip.receiveShadow = true;
+
+const hero = new THREE.Group();
+hero.add(pouchBody);
+hero.add(pouchStrip);
+
 const heroPivot = new THREE.Group();
 heroPivot.add(hero);
 
@@ -450,46 +481,70 @@ function applyState(time) {
   heroPivot.rotation.y = lerp(Math.PI / 2, 0, move);
   heroPivot.rotation.x = -0.1 * move;
 
-  // ──────────────── 4) فتح الكيس واستخراج الكارت ثم سقوط الكيس على الأرض ────────────────
+  // ──────────────── 4) تمزيق الكيس حركياً وخروج الكارت ورمي الكيس بـ موشن واقعي ────────────────
   const s_open = ease(pouchOpen);
   if (move > 0.85) {
-    // تبديل ملمس الكيس إلى كيس مفتوح بمجرد بدء الفتح
-    if (s_open > 0.04) {
-      if (heroFrontMat.map !== pouchOpenTex) {
-        heroFrontMat.map = pouchOpenTex;
-        heroFrontMat.needsUpdate = true;
+    // ◄ المرحلة 1: حركة تمزّق الطرف الأيسر للكيس (0.00 -> 0.32)
+    const s_tear = ease(seg(s_open, 0.0, 0.28));
+    pouchStrip.position.x = lerp(-PL / 2 + tearW / 2, -1.62, s_tear);
+    pouchStrip.position.z = lerp(0.0, -0.18, s_tear);
+    pouchStrip.rotation.y = lerp(0.0, -0.65, s_tear);
+    pouchStrip.rotation.z = lerp(0.0, 0.22, s_tear);
+
+    pouchBody.position.x = lerp(tearW / 2, 0.28, s_tear);
+    pouchBody.rotation.y = lerp(0.0, 0.06, s_tear);
+
+    // ◄ المرحلة 2: رمي الكيس الفارغ بحركة مقذوف وفيزياء دوران وسقوط وارتداد (0.28 -> 0.82)
+    const s_throw = seg(s_open, 0.28, 0.82);
+    if (s_throw > 0) {
+      const t = ease(s_throw);
+      const t_lin = s_throw;
+
+      // قوس الرمي الرأسي: نبضة صعود للأعلى أولاً ثم هبوط متسارع بفعل الجاذبية
+      const loft = Math.sin(t_lin * Math.PI) * 0.55 * (1 - t_lin * 0.7);
+      const gravity = -4.06 * Math.pow(t_lin, 1.85);
+
+      // ارتداد خفيف ممتص عند ملامسة سطح الطاولة
+      let bounce = 0;
+      if (t_lin > 0.80) {
+        const bt = (t_lin - 0.80) / 0.20;
+        bounce = Math.sin(bt * Math.PI) * 0.12 * (1 - bt);
       }
+
+      hero.position.x = lerp(0, -2.60, t);
+      hero.position.y = loft + gravity + bounce;
+      hero.position.z = lerp(0, -0.20, t);
+
+      // دوران شقلبة الكيس في الهواء أثناء الرمي (دورة كاملة ويستقر مستوياً)
+      hero.rotation.x = -Math.PI * 2.0 * t - Math.PI / 2 + 0.06;
+      hero.rotation.y = Math.sin(t_lin * Math.PI) * 0.45 + lerp(0, 0.12, t) + flip;
+      hero.rotation.z = Math.sin(t_lin * Math.PI * 1.4) * 0.35 + lerp(0, 0.16, t);
+
+      // شريط التمزق يتطاير ويسقط مستقراً بجانب الكيس على الطاولة
+      pouchStrip.position.x = lerp(-1.62, -1.35, t);
+      pouchStrip.position.y = Math.sin(t_lin * Math.PI * 2.5) * 0.08;
+      pouchStrip.position.z = lerp(-0.18, 0.0, t);
+      pouchStrip.rotation.y = lerp(-0.65, 0.0, t);
+      pouchStrip.rotation.z = lerp(0.22, 0.12, t);
     } else {
-      if (heroFrontMat.map !== pouchSealedTex) {
-        heroFrontMat.map = pouchSealedTex;
-        heroFrontMat.needsUpdate = true;
-      }
+      hero.position.set(0, 0, 0);
+      hero.rotation.set(0, flip, 0);
     }
 
-    // المرحلة 1: خروج الكارت عمودياً من فوهة الكيس المفتوح (0.0 -> 0.35)
-    const s_extract = ease(seg(s_open, 0.0, 0.35));
-
-    // المرحلة 2: سقوط الكيس الفارغ بفعل الجاذبية على الأرضية بجانب العلبة (0.28 -> 0.75)
-    const s_drop = ease(seg(s_open, 0.28, 0.75));
-    hero.position.x = lerp(0, -2.60, s_drop);
-    hero.position.y = lerp(0, -4.07, s_drop);
-    hero.position.z = lerp(0, -0.20, s_drop);
-    hero.rotation.x = lerp(0, -Math.PI / 2 + 0.08, s_drop);
-    hero.rotation.y = lerp(0, 0.20, s_drop) + flip;
-    hero.rotation.z = lerp(0, 0.16, s_drop);
-
-    // المرحلة 3: انزلاق الكارت الطبي للمقدمة والسنتر ليكون البطل الأساسي (0.35 -> 1.0)
+    // ◄ المرحلة 3: خروج الكارت من الفتحة الممزقة وانطلاقه للسنتر والواجهة (0.10 -> 1.00)
     if (s_open > 0.01) {
       cassette.visible = true;
-      const s_center = ease(seg(s_open, 0.35, 1.0));
+      const s_emerge = ease(seg(s_open, 0.08, 0.38));
+      const s_center = ease(seg(s_open, 0.35, 1.00));
 
-      const casX = lerp(0.0, -0.25, s_center);
-      const casY = lerp(0.0, 1.45, s_extract) + lerp(0, -1.85, s_center) + (s_open > 0.98 ? Math.sin(time * 2.2) * 0.025 : 0);
-      const casZ = lerp(0.04, 1.65, s_center);
+      // انزلاق جانبي يساراً خارج الكيس الممزق أولاً
+      const casX = lerp(0.20, -1.95, s_emerge) + lerp(0, 1.70, s_center);
+      const casY = lerp(0.0, 0.55, s_emerge) + lerp(0, -1.00, s_center) + (s_open > 0.98 ? Math.sin(time * 2.2) * 0.025 : 0);
+      const casZ = lerp(0.0, 0.35, s_emerge) + lerp(0, 1.30, s_center);
 
       cassette.position.set(casX, casY, casZ);
       cassette.rotation.x = lerp(-0.06, -0.20, s_center);
-      cassette.rotation.y = casFlip;
+      cassette.rotation.y = lerp(0.0, Math.PI * 2.0, s_center) + casFlip;
       cassette.rotation.z = lerp(0.0, 0.02, s_center);
     } else {
       cassette.visible = false;
@@ -498,10 +553,10 @@ function applyState(time) {
   } else {
     hero.position.set(0, 0, 0);
     hero.rotation.set(0, flip, 0);
-    if (heroFrontMat.map !== pouchSealedTex) {
-      heroFrontMat.map = pouchSealedTex;
-      heroFrontMat.needsUpdate = true;
-    }
+    pouchBody.position.set(tearW / 2, 0, 0);
+    pouchBody.rotation.set(0, 0, 0);
+    pouchStrip.position.set(-PL / 2 + tearW / 2, 0, 0);
+    pouchStrip.rotation.set(0, 0, 0);
     cassette.visible = false;
   }
 
@@ -622,7 +677,7 @@ renderer.setAnimationLoop(() => {
     p = targetP > p ? Math.min(targetP, p + step) : Math.max(targetP, p - step);
   }
   if (pouchOpen !== targetPouchOpen) {
-    const pStep = dt / 0.85;
+    const pStep = dt / 1.25;
     pouchOpen = targetPouchOpen > pouchOpen ? Math.min(targetPouchOpen, pouchOpen + pStep) : Math.max(targetPouchOpen, pouchOpen - pStep);
   }
   flip += (flipTarget - flip) * Math.min(1, dt * 6);

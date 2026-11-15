@@ -30,7 +30,7 @@ class _ProductSearchDialogState extends State<ProductSearchDialog> {
     (name: 'EVO PLUS', spec: 'Blood Glucose Monitoring System • جهاز قياس السكر ثلاثي الأبعاد', type: 'Devices', has3D: true),
     (name: 'EVO STAR', spec: 'Blood Hemoglobin Measuring System • جهاز قياس الهيموجلوبين', type: 'Devices', has3D: true),
     // كواشف التحاليل السريعة (Rapid Test Kits)
-    (name: 'H. Pylori Ag TEST', spec: '25 / TEST - 18 BAG - 450 CARTON • علبة تفاعلية 3D', type: 'Rapid Tests', has3D: true),
+    (name: 'H. Pylori Ag TEST (Hpag)', spec: '25 / TEST - 18 BAG - 450 CARTON • علبة تفاعلية 3D وكاسيت التحليل', type: 'Rapid Tests', has3D: true),
     (name: 'CTNI TEST', spec: '40 / TEST - 16 BAG - 640 CARTON', type: 'Rapid Tests', has3D: true),
     (name: 'HCG TEST', spec: '40 / TEST - 16 BAG - 640 CARTON', type: 'Rapid Tests', has3D: true),
     (name: 'HBs Ag TEST', spec: '40 / TEST - 16 BAG - 640 CARTON', type: 'Rapid Tests', has3D: true),
@@ -103,7 +103,7 @@ class _ProductSearchDialogState extends State<ProductSearchDialog> {
                         autofocus: true,
                         style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
                         decoration: InputDecoration(
-                          hintText: 'ابحث باسم المنتج (مثلاً: EVO PLUS, H. Pylori, CTNI)...',
+                          hintText: 'ابحث باسم المنتج (مثلاً: Hpag, EVO PLUS, H. Pylori)...',
                           hintStyle: TextStyle(color: Colors.black38, fontSize: mobile ? 13 : 15),
                           border: InputBorder.none,
                         ),

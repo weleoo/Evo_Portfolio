@@ -23,9 +23,7 @@ class _EvoBox3DState extends State<EvoBox3D> {
     _viewType = 'evo-box-3d-${widget.productId}-${identityHashCode(this)}';
     final htmlFile = widget.productId == 'evo_plus'
         ? 'evo_plus.html'
-        : widget.productId == 'ctni'
-            ? 'ctni.html'
-            : 'box.html';
+        : 'box.html';
     ui_web.platformViewRegistry.registerViewFactory(_viewType, (int _) {
       return html.IFrameElement()
         // مسار الـ asset على الويب مع كاسر كاش فوري لمنع أي كاش في متصفح العميل

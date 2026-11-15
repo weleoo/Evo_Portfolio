@@ -1,49 +1,70 @@
 <!doctype html>
-<html lang="ar" dir="rtl">
+<html lang="en">
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<title>CTNI TEST 3D Box - علبة فحص التروبونين ثلاثية الأبعاد</title>
+<title>EVO Box 3D</title>
 <style>
   html,body{margin:0;height:100%;background:transparent;overflow:hidden;
     font-family:'Poppins',system-ui,-apple-system,'Segoe UI',Roboto,sans-serif}
   #c{position:fixed;inset:0;width:100%;height:100%;display:block;touch-action:none;outline:none}
-  #hint{position:fixed;left:50%;bottom:18px;transform:translateX(-50%);
-    background:rgba(255,255,255,.92);color:#2535a8;font-size:13px;font-weight:700;
-    padding:10px 22px;border-radius:30px;box-shadow:0 3px 14px rgba(0,0,0,.14);
-    pointer-events:none;transition:opacity .3s;white-space:nowrap;user-select:none}
-  #btn{position:fixed;right:18px;top:16px;border:0;cursor:pointer;color:#fff;font-weight:700;
-    font-size:13px;padding:10px 24px;border-radius:30px;
-    background:linear-gradient(135deg, #0055d0, #4a98ff);box-shadow:0 3px 12px rgba(0,85,208,.25);
-    transition:transform .15s}
-  #btn:hover{transform:scale(1.04)}
-  #btn:active{transform:scale(0.97)}
-  #btn:disabled{opacity:.55;cursor:default;transform:none}
+  #hint{position:fixed;left:50%;bottom:16px;transform:translateX(-50%);
+    background:rgba(255,255,255,.92);color:#102a43;font-size:13px;font-weight:600;
+    padding:9px 20px;border-radius:30px;box-shadow:0 3px 14px rgba(0,0,0,.15);
+    pointer-events:none;transition:opacity .3s;white-space:nowrap;z-index:10}
+  #badge{position:fixed;top:14px;left:50%;transform:translateX(-50%);
+    background:rgba(255,255,255,.94);color:#004d40;font-size:12px;font-weight:700;
+    padding:8px 20px;border-radius:30px;box-shadow:0 3px 12px rgba(0,0,0,.14);
+    border:1px solid rgba(0,137,123,.25);pointer-events:none;transition:opacity .35s;
+    white-space:nowrap;opacity:0;z-index:10}
+  #btn{position:fixed;right:16px;top:14px;border:0;cursor:pointer;color:#fff;font-weight:700;
+    font-size:13px;padding:10px 22px;border-radius:30px;
+    background:linear-gradient(#0055d0,#4a98ff);box-shadow:0 2px 10px rgba(0,0,0,.18);z-index:10}
+  #btn:disabled{opacity:.55;cursor:default}
+  #pouchBtn{position:fixed;right:16px;top:62px;border:0;cursor:pointer;color:#fff;font-weight:700;
+    font-size:12px;padding:9px 18px;border-radius:30px;
+    background:linear-gradient(135deg,#00897b,#004d40);box-shadow:0 3px 12px rgba(0,137,123,.35);
+    transition:all .25s;display:none;z-index:10}
+  #pouchBtn:hover{transform:translateY(-1px);box-shadow:0 5px 16px rgba(0,137,123,.5)}
   #load{position:fixed;inset:0;display:flex;align-items:center;justify-content:center;
-    background:rgba(240,244,249,.85);color:#0055d0;font-size:16px;font-weight:700;transition:opacity .4s;pointer-events:none}
+    color:#2535a8;font-weight:600;transition:opacity .4s;pointer-events:none}
 </style>
-<script type="importmap">{ "imports": { "three": "./three.module.js" } }</script>
 </head>
 <body>
 <canvas id="c" tabindex="0"></canvas>
-<div id="load">جاري تحميل مجسم CTNI TEST...</div>
-<div id="hint">اضغط على استيكر QC لفتح العلبة • اسحب للتدوير</div>
+<div id="load">Loading 3D…</div>
+<div id="badge" dir="rtl">🛡️ عبوة فويل معزولة مانعة للرطوبة — هوية حصرية وتصميم معتمد لـ <bdi>EVO MED</bdi></div>
+<div id="hint">Click the QC sticker to open the box</div>
 <button id="btn">Open box</button>
+<button id="pouchBtn">🔬 استخراج كارت Hpag</button>
 
+<script type="importmap">{ "imports": { "three": "./three.module.js" } }</script>
 <script type="module">
 import * as THREE from 'three';
 import { OrbitControls } from './OrbitControls.js';
 
-/* ───────────────────────── 1. أبعاد علبة CTNI TEST ───────────────────────── */
-const L = 4.35;                   // الطول
-const W = 3.20;                   // العرض / العمق
-const H = 2.00;                   // الارتفاع
-const T = 0.04;                   // سمك الكرتون
-const FH = H * 0.12;              // ارتفاع لسان الغطا
-const DURATION = 2.4;             // زمن الفتح بالثواني
-const LID_OPEN = Math.PI * 0.62;  // زاوية ميل الغطاء عند الفتح
+/* ───────────────────────── Product config ─────────────────────────
+   لإضافة منتج جديد: حط صوره في textures/<id>/ بنفس الأسماء وضيف سطر هنا
+   (front/back/left/right/top/pouch_front/pouch_back .jpg) */
+const PRODUCTS = {
+  hpylori_ag: { name: 'Hpag', dir: 'textures/hpylori_ag/', L: 4.35, W: 3.2, H: 2.0, flap: 0.12, stickerX: 0.0 },
+  ctni:       { name: 'CTNI', dir: 'textures/ctni/',       L: 4.35, W: 3.2, H: 2.0, flap: 0.12, stickerX: 0.0 },
+};
+const params = new URLSearchParams(location.search);
+const key = params.get('p') || 'ctni';
+if (key === 'evo_plus') {
+  window.location.replace('evo_plus.html' + window.location.search);
+}
+const cfg = PRODUCTS[key] || PRODUCTS.hpylori_ag;
+const autoOpen = params.get('open') === '1';
+const autoFlip = params.get('flip') === '1';
+const autoPouch = params.get('pouch') === 'open' || params.get('cassette') === '1';
+const autoCasFlip = params.get('casflip') === '1';
+const { L, W, H } = cfg;
+const T = 0.04;                 // سمك الكرتون
+const FH = H * cfg.flap;        // ارتفاع اللسان الأمامي للغطا
 
-/* ───────────────────────── 2. المشهد والإضاءة ───────────────────────── */
+/* ───────────────────────── Renderer / scene ───────────────────────── */
 const canvas = document.getElementById('c');
 const renderer = new THREE.WebGLRenderer({ canvas, antialias: true, alpha: true });
 renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
@@ -59,7 +80,7 @@ const controls = new OrbitControls(camera, canvas);
 controls.target.set(0, 1.2, 0);
 controls.enableDamping = true;
 controls.enablePan = false;
-controls.minDistance = 4;
+controls.minDistance = 5;
 controls.maxDistance = 22;
 controls.maxPolarAngle = Math.PI * 0.53;
 
@@ -77,193 +98,161 @@ ground.rotation.x = -Math.PI / 2;
 ground.receiveShadow = true;
 scene.add(ground);
 
-/* ───────────────────────── 3. تحميل خامات CTNI الأصلية ───────────────────────── */
-const manager = new THREE.LoadingManager(() => {
-  const l = document.getElementById('load');
-  if (l) { l.style.opacity = '0'; setTimeout(() => l.remove(), 400); }
-});
+/* ───────────────────────── Textures / materials ───────────────────────── */
+const manager = new THREE.LoadingManager(
+  () => {
+    const l = document.getElementById('load');
+    if (l) { l.style.opacity = '0'; setTimeout(() => l.remove(), 500); }
+  },
+  undefined,
+  (url) => {
+    console.warn('Failed loading texture:', url);
+    const l = document.getElementById('load');
+    if (l) { l.style.opacity = '0'; setTimeout(() => l.remove(), 500); }
+  }
+);
 const loader = new THREE.TextureLoader(manager);
 const aniso = renderer.capabilities.getMaxAnisotropy();
-
 function tex(name) {
-  const t = loader.load('textures/ctni/' + name + '?v=5');
+  const t = loader.load(cfg.dir + name + '?v=7');
   t.colorSpace = THREE.SRGBColorSpace;
   t.anisotropy = aniso;
   return t;
 }
+const std = (o) => new THREE.MeshStandardMaterial({ roughness: 0.6, metalness: 0, ...o });
+const cream = std({ color: 0xf1e9db, roughness: 0.9 });
+const kraft = std({ color: 0xb79b78, roughness: 0.95 });
 
-const std = (o) => new THREE.MeshStandardMaterial({ roughness: 0.55, metalness: 0, ...o });
-const cream = std({ color: 0xf5efe6, roughness: 0.9 }); // كرتون داخلي ناصع مطابق للعلبة الحقيقية
-
+/* صندوق بسمك: الوش الخارجي (outIdx) بتكستشر، والباقي كرتون */
 function slab(w, h, d, outIdx, map) {
-  const mats = [cream, cream, cream, cream, cream, cream];
-  if (map) mats[outIdx] = std({ map, roughness: 0.42 });
+  const mats = Array(6).fill(cream);
+  if (map) mats[outIdx] = std({ map, roughness: 0.5 });
   const m = new THREE.Mesh(new THREE.BoxGeometry(w, h, d), mats);
   m.castShadow = m.receiveShadow = true;
   return m;
 }
 
-/* ───────────────────────── 4. بناء هيكل علبة CTNI ───────────────────────── */
+/* ───────────────────────── Box body ───────────────────────── */
 const box = new THREE.Group();
 scene.add(box);
 
+// الوش الأمامي (أحمر + QC): الجزء السفلي من الصورة، واللسان بياخد الجزء العلوي
 const frontBodyH = H - FH;
 const frontTexBody = tex('front.jpg');
 frontTexBody.repeat.set(1, frontBodyH / H);
 frontTexBody.offset.set(0, 0);
-
 const frontTexFlap = tex('front.jpg');
 frontTexFlap.repeat.set(1, FH / H);
 frontTexFlap.offset.set(0, 1 - FH / H);
 
 const front = slab(L - 2 * T, frontBodyH, T, 4, frontTexBody);
 front.position.set(0, frontBodyH / 2, W / 2 - T / 2);
-
 const back = slab(L - 2 * T, H, T, 5, tex('back.jpg'));
 back.position.set(0, H / 2, -W / 2 + T / 2);
-
-const right = slab(T, H, W, 0, tex('right.jpg'));
+const right = slab(T, H, W, 0, tex('right.jpg'));          // +x : ليبل H.Pylori
 right.position.set(L / 2 - T / 2, H / 2, 0);
-
-const left = slab(T, H, W, 1, tex('left.jpg'));
+const left = slab(T, H, W, 1, tex('left.jpg'));            // -x : بيانات المصنع
 left.position.set(-L / 2 + T / 2, H / 2, 0);
-
-const bottom = slab(L, T, W, 3, null);
+const bottom = slab(L, T, W, 3, null);                      // كرتون ناعم للقاع
 bottom.position.set(0, T / 2, 0);
-
 box.add(front, back, right, left, bottom);
 
-// الغطاء العلوي
+/* ───────────────────────── Lid (hinged at back-top edge) ───────────────────────── */
 const lid = new THREE.Group();
 lid.position.set(0, H, -W / 2);
 box.add(lid);
-
 const lidTop = slab(L, T, W, 2, tex('top.jpg'));
 lidTop.position.set(0, T / 2, W / 2);
-
 const flap = slab(L - 2 * T, FH, T, 4, frontTexFlap);
 flap.position.set(0, -FH / 2, W - T / 2);
-
 lid.add(lidTop, flap);
 
-/* ───────────────────────── 5. المحتويات الداخلية لـ CTNI الحقيقية ─────────────────────────
-   - العلبة ممتلئة بـ 40 كيس فحص فضي متراصين بكامل مساحة العلبة.
-   - زجاجة قطارة المحلول المنظم Troponin I Buffer في الجانب الأيسر.
-   ────────────────────────────────────────────────────────────────────────────── */
+/* ───────────────────────── Contents ───────────────────────── */
 const inner = new THREE.Group();
 box.add(inner);
 
-// أبعاد كيس الفحص الفضي الواحد (نسبة 1.8 متطابقة مع حجم الكيس الواقعي)
-const PL = 2.95;                  // طول الكيس الفضي
-const PH = 1.64;                  // ارتفاع الكيس
-const PT = 0.052;                 // سمك الكيس
-const pouchSilverMat = std({ color: 0xd8e0ea, roughness: 0.32, metalness: 0.40 });
+// حاجز الأمبولات (كرتون)
+const trayW = 1.3;
+const divX = -L / 2 + T + trayW;
+const divider = new THREE.Mesh(new THREE.BoxGeometry(0.04, 1.3, W - 2 * T), kraft);
+divider.position.set(divX, 0.65 + T, 0);
+divider.castShadow = divider.receiveShadow = true;
+inner.add(divider);
 
-// رصّة الـ 40 كيس فحص فضي داخل العلبة (مزاحة لليمين لإتاحة مساحة لزجاجة القطارة على اليسار)
-const stackX = 0.42;
-const numPouches = 40;
-const zStart = -W / 2 + T + 0.12;
-const zEnd   =  W / 2 - T - 0.12;
-const zStep  = (zEnd - zStart) / (numPouches - 1);
-const pouchGeo = new THREE.BoxGeometry(PL, PH, PT);
-
-// مكان الكارت البطل الذي سيخرج في الأنيميشن
-const heroIndex = 26;
-let heroStart = new THREE.Vector3(stackX, T + PH / 2, 0);
-
-for (let i = 0; i < numPouches; i++) {
-  const z = zStart + i * zStep;
-  if (i === heroIndex) {
-    heroStart.set(stackX, T + PH / 2, z);
-    continue; // سيتم تمثيله بالكارت البطل المتحرك
+function makeVial() {
+  const g = new THREE.Group();
+  const body = new THREE.Mesh(new THREE.CylinderGeometry(0.12, 0.12, 0.7, 20), std({ color: 0xf4f4f4, roughness: 0.3 }));
+  body.position.y = 0.35;
+  const cap = new THREE.Mesh(new THREE.CylinderGeometry(0.15, 0.13, 0.32, 20), std({ color: 0xc4161c, roughness: 0.4 }));
+  cap.position.y = 0.86;
+  const tip = new THREE.Mesh(new THREE.CylinderGeometry(0.075, 0.105, 0.24, 16), std({ color: 0xf2c4cb, roughness: 0.5 }));
+  tip.position.y = 1.14;
+  [body, cap, tip].forEach(m => { m.castShadow = true; g.add(m); });
+  return g;
+}
+const vials = [];
+const cols = [-1.82, -1.52, -1.22];
+for (let c = 0; c < 3; c++) {
+  const n = c === 1 ? 8 : 9;
+  for (let r = 0; r < n; r++) {
+    if (vials.length >= 25) break;
+    const v = makeVial();
+    const z = -1.42 + r * 0.355 + (c === 1 ? 0.18 : 0);
+    v.position.set(cols[c], T, z);
+    inner.add(v);
+    vials.push(v);
   }
-  const pouchMesh = new THREE.Mesh(pouchGeo, pouchSilverMat);
-  pouchMesh.position.set(stackX, T + PH / 2, z);
-  pouchMesh.castShadow = pouchMesh.receiveShadow = true;
-  inner.add(pouchMesh);
+}
+const heroVial = vials[8];                       // أقرب أمبولة للواجهة
+const vialStart = heroVial.position.clone();
+
+// كروت التيست (كدسة)
+const PL = 2.8, PH = 1.55, PT = 0.05;            // طول/ارتفاع/سمك الكارت
+const pouchMat = std({ color: 0xdde5ee, roughness: 0.35, metalness: 0.45 });
+const heroX = 0.55;
+const stackGeo = new THREE.BoxGeometry(PT, PH, PL);
+for (let x = divX + 0.12; x < L / 2 - T - 0.05; x += 0.1) {
+  if (Math.abs(x - heroX) < 0.06) continue;      // مكان الكارت اللي هيطلع
+  const m = new THREE.Mesh(stackGeo, pouchMat);
+  m.position.set(x, T + PH / 2, 0);
+  m.castShadow = m.receiveShadow = true;
+  inner.add(m);
 }
 
-// الكارت البطل بوجهيه (المطبوع بالبيانات الأصلية)
-const pouchFront = tex('pouch_front.jpg');
-const pouchBack  = tex('pouch_back.jpg');
-const heroMats = [
-  pouchSilverMat, pouchSilverMat, pouchSilverMat, pouchSilverMat,
-  std({ map: pouchFront, roughness: 0.3, metalness: 0.08 }),
-  std({ map: pouchBack,  roughness: 0.3, metalness: 0.08 })
-];
+// الكارت البطل
+const pouchFront = tex('pouch_front.jpg'), pouchBack = tex('pouch_back.jpg');
+const heroMats = [pouchMat, pouchMat, pouchMat, pouchMat,
+  std({ map: pouchFront, roughness: 0.3, metalness: 0.1 }),
+  std({ map: pouchBack, roughness: 0.3, metalness: 0.1 })];
 const hero = new THREE.Mesh(new THREE.BoxGeometry(PL, PH, PT), heroMats);
 hero.castShadow = true;
 const heroPivot = new THREE.Group();
 heroPivot.add(hero);
+
+// كاسيت التحليل الطبي Hpag
+const casFrontTex = tex('cassette_front.png');
+const casBackTex = tex('cassette_back.png');
+const CL = 2.15, CH = 0.62, CT = 0.08;
+const casPlasticMat = std({ color: 0xffffff, roughness: 0.45, metalness: 0.02 });
+const casMats = [
+  casPlasticMat, // +X right
+  casPlasticMat, // -X left
+  casPlasticMat, // +Y top
+  casPlasticMat, // -Y bottom
+  std({ map: casFrontTex, roughness: 0.4, metalness: 0.04 }), // +Z front face (sample well, Hpag, EVO)
+  std({ map: casBackTex, roughness: 0.45, metalness: 0.02 })  // -Z back face
+];
+const cassette = new THREE.Mesh(new THREE.BoxGeometry(CL, CH, CT), casMats);
+cassette.castShadow = true;
+cassette.visible = false;
+heroPivot.add(cassette);
+
 inner.add(heroPivot);
+const heroStart = new THREE.Vector3(heroX, T + PH / 2, 0);
 heroPivot.position.copy(heroStart);
+heroPivot.rotation.y = Math.PI / 2;
 
-/* ───────────────────────── زجاجة قطارة Troponin I Buffer ───────────────────────── */
-function makeBufferLabel() {
-  const c = document.createElement('canvas'); c.width = 512; c.height = 256;
-  const g = c.getContext('2d');
-  g.fillStyle = '#ffffff';
-  g.fillRect(0, 0, 512, 256);
-
-  // إطار أزرق علوي وسفلي
-  g.fillStyle = '#0055d0';
-  g.fillRect(0, 0, 512, 12);
-  g.fillRect(0, 244, 512, 12);
-
-  // النص
-  g.fillStyle = '#111111';
-  g.font = 'bold 36px Arial, sans-serif';
-  g.textAlign = 'center';
-  g.fillText('Troponin I Buffer', 256, 60);
-
-  g.fillStyle = '#333333';
-  g.font = '22px Arial, sans-serif';
-  g.fillText('REF: EM-CTNI40   •   Vol: 3.0 mL', 256, 110);
-  g.fillText('LOT: CTNI2608901   •   EXP: 2028-03', 256, 150);
-  g.fillText('Store at 2°C - 30°C   •   IVD', 256, 190);
-
-  g.fillStyle = '#c4161c';
-  g.font = 'bold 22px Arial, sans-serif';
-  g.fillText('EVO MED L.L.C', 256, 226);
-
-  const t = new THREE.CanvasTexture(c);
-  t.colorSpace = THREE.SRGBColorSpace;
-  return t;
-}
-
-function makeBufferBottle() {
-  const g = new THREE.Group();
-  const labelTex = makeBufferLabel();
-
-  // جسم الزجاجة الأبيض مع الليبل المطبوع
-  const bodyGeo = new THREE.CylinderGeometry(0.32, 0.34, 1.15, 32);
-  const bodyMats = [
-    std({ map: labelTex, roughness: 0.35 }),
-    std({ color: 0xffffff, roughness: 0.35 }),
-    std({ color: 0xffffff, roughness: 0.35 })
-  ];
-  const body = new THREE.Mesh(bodyGeo, bodyMats);
-  body.position.y = 0.575;
-
-  // كتف الزجاجة
-  const shoulder = new THREE.Mesh(new THREE.CylinderGeometry(0.18, 0.32, 0.22, 24), std({ color: 0xf5f5f5, roughness: 0.4 }));
-  shoulder.position.y = 1.26;
-
-  // غطاء القطارة المخروطي الأبيض
-  const cap = new THREE.Mesh(new THREE.CylinderGeometry(0.06, 0.19, 0.65, 24), std({ color: 0xffffff, roughness: 0.3 }));
-  cap.position.y = 1.685;
-
-  [body, shoulder, cap].forEach(m => { m.castShadow = true; g.add(m); });
-  return g;
-}
-
-const bottle = makeBufferBottle();
-// مكان الزجاجة داخل العلبة في الجانب الأيسر بين الأكياس كما في الصورة
-const bottleStart = new THREE.Vector3(-L / 2 + T + 0.42, T, 0.15);
-bottle.position.copy(bottleStart);
-inner.add(bottle);
-
-/* ───────────────────────── 6. استيكر QC PASS التفاعلي (مطابق تماماً لـ HPylori Ag) ───────────────────────── */
+/* ───────────────────────── QC sticker (واقعي: نصه على الغطا ونصه على الوش مع تقشير ثلاثي الأبعاد) ───────────────────────── */
 function makeStickerTexture() {
   const s = 512, c = document.createElement('canvas'); c.width = c.height = s;
   const g = c.getContext('2d');
@@ -306,7 +295,7 @@ function makeStickerTexture() {
 
 const SD = 0.95, SEAM = 0.35;                      // قطر الاستيكر + نسبة اللي فوق خط الغطا
 const frontH = SD * (1 - SEAM), topH = SD * SEAM;
-const stickerX = 0.0;
+const stickerX = cfg.stickerX * L;
 const frontY = H - frontH / 2;
 const stickerBaseZ = W / 2 + 0.012;
 
@@ -348,23 +337,30 @@ const glowRing = new THREE.Mesh(new THREE.RingGeometry(SD / 2 + 0.02, SD / 2 + 0
 glowRing.position.set(stickerX, H, stickerBaseZ + 0.002);
 box.add(glowRing);
 
-/* ───────────────────────── 7. محرك الأنيميشن ───────────────────────── */
-let p = 0, targetP = 0, flip = 0, flipTarget = 0;
-const seg = (t, a, b) => Math.max(0, Math.min(1, (t - a) / (b - a)));
-const ease = (t) => t < 0.5 ? 4 * t * t * t : 1 - Math.pow(-2 * t + 2, 3) / 2;
+/* ───────────────────────── Animation state ───────────────────────── */
+const clamp01 = (x) => Math.min(1, Math.max(0, x));
+const seg = (p, a, b) => clamp01((p - a) / (b - a));
+const ease = (t) => (t < 0.5 ? 4 * t * t * t : 1 - Math.pow(-2 * t + 2, 3) / 2);
 const lerp = (a, b, t) => a + (b - a) * t;
 
-// إحداثيات رفع وخروج الكارت والزجاجة للأمام (مفصولين بمسافة واضحة ومريحة بدون ملامسة)
-const heroLift   = new THREE.Vector3(stackX, H + 0.6, heroStart.z);
-const heroEnd    = new THREE.Vector3(0.52, H + 1.25, W / 2 + 0.55);
+let p = autoOpen ? 1 : 0, targetP = autoOpen ? 1 : 0;                           // 0 = مقفولة ، 1 = مفتوحة والكارت بره
+let flipTarget = autoFlip ? Math.PI : 0, flip = autoFlip ? Math.PI : 0;
+let pouchOpen = autoPouch ? 1 : 0, targetPouchOpen = autoPouch ? 1 : 0;
+let casFlipTarget = autoCasFlip ? Math.PI : 0, casFlip = autoCasFlip ? Math.PI : 0;
+const DURATION = 4.8;                             // ثواني للفتح الكامل
+const LID_OPEN = THREE.MathUtils.degToRad(112);
 
-const bottleLift = new THREE.Vector3(bottleStart.x, H + 0.6, bottleStart.z);
-const bottleEnd  = new THREE.Vector3(-1.62, H + 1.15, W / 2 + 0.50);
+const heroLift = new THREE.Vector3(heroX, 3.1, 0);
+const heroEnd = new THREE.Vector3(0.25, 4.1, 1.7);
+const vialLift = new THREE.Vector3(vialStart.x, 3.0, vialStart.z);
+const vialEnd = new THREE.Vector3(-2.15, 3.45, 2.0);
 
 function applyState(time) {
   // ──────────────── 1) مرحلة تقشير الاستيكر أولاً ────────────────
+  // s_peel: من 0 إلى 0.24 (تقشير فيزيائي كامل للاستيكر قبل لمس الغطا)
   const s_peel = ease(seg(p, 0.0, 0.24));
-  const s_fly  = ease(seg(p, 0.22, 0.32));
+  // s_fly: من 0.22 إلى 0.32 (انفصال وطيران الاستيكر واختفاؤه)
+  const s_fly = ease(seg(p, 0.22, 0.32));
 
   const idle = p === 0 && targetP === 0;
   glowRing.visible = idle;
@@ -377,11 +373,13 @@ function applyState(time) {
   stickerMat.opacity = (1 - s_fly * s_fly);
 
   // انحناء وتقشير الجزء الأمامي
-  const rCurl = 0.18;
+  const rCurl = 0.18; // نصف قطر لفة التقشير
   for (let i = 0; i < posF.count; i++) {
     const x0 = origPosF[i * 3];
     const y0 = origPosF[i * 3 + 1];
+    // v: من 0 (أسفل الاستيكر) إلى 1 (خط الفاصل العلوي)
     const v = (y0 + frontH / 2) / frontH;
+    // إضافة ميل جانبي طفيف ليعطي حركة واقعية لليد وهي بتشد
     const v_eff = v + (x0 / SD) * 0.12;
     const peelLevel = s_peel * 1.25;
 
@@ -410,7 +408,8 @@ function applyState(time) {
   for (let i = 0; i < posT.count; i++) {
     const x0 = origPosT[i * 3];
     const y0 = origPosT[i * 3 + 1];
-    const v = (y0 + topH / 2) / topH;
+    // في الجزء العلوي y0=-topH/2 عند الفاصل و +topH/2 لورا
+    const v = (y0 + topH / 2) / topH; // 0 عند الفاصل، 1 لورا
     if (v <= s_top_peel) {
       const d = (s_top_peel - v) * topH;
       const z = Math.sin(d / 0.15) * 0.12;
@@ -439,53 +438,61 @@ function applyState(time) {
   const s_lid = ease(seg(p, 0.30, 0.64));
   lid.rotation.x = -s_lid * LID_OPEN;
 
-  // ──────────────── 3) خروج كيس CTNI وزجاجة Troponin I Buffer ────────────────
+  // ──────────────── 3) خروج الكارت والأمبولة ────────────────
   const lift = ease(seg(p, 0.62, 0.82));
   const move = ease(seg(p, 0.80, 1.0));
-  const bob = move > 0.99 ? Math.sin(time * 1.8) * 0.05 : 0;
+  const bob = move > 0.99 ? Math.sin(time * 1.6) * 0.06 : 0;
 
   heroPivot.position.lerpVectors(heroStart, heroLift, lift).lerp(heroEnd, move);
   heroPivot.position.y += bob;
-  heroPivot.rotation.y = flip;
+  heroPivot.rotation.y = lerp(Math.PI / 2, 0, move);
+  heroPivot.rotation.x = -0.1 * move;
 
-  bottle.position.lerpVectors(bottleStart, bottleLift, lift).lerp(bottleEnd, move);
-  bottle.position.y += bob;
-  bottle.rotation.y = Math.PI + 0.08 * move;
-  bottle.rotation.z = 0.08 * move;
+  // ──────────────── 4) فتح الكيس واستخراج كاسيت Hpag ────────────────
+  const s_open = ease(pouchOpen);
+  if (move > 0.85) {
+    hero.position.x = lerp(0, -1.35, s_open);
+    hero.position.y = lerp(0, 0.12, s_open);
+    hero.position.z = lerp(0, -0.22, s_open);
+    hero.rotation.y = lerp(0, 0.16, s_open) + flip;
+    hero.rotation.x = lerp(0, -0.04, s_open);
+    hero.rotation.z = lerp(0, -0.04, s_open);
 
-  // تقريب الكاميرا بسلاسة
+    if (s_open > 0.01) {
+      cassette.visible = true;
+      const s_up = ease(seg(s_open, 0.0, 0.45));
+      const s_glide = ease(seg(s_open, 0.35, 1.0));
+      
+      const casX = lerp(-1.35, 1.35, s_glide);
+      const casY = lerp(0.12, 0.82, s_up) + lerp(0, -0.52, s_glide) + (s_open > 0.98 ? Math.sin(time * 2.2) * 0.02 : 0);
+      const casZ = lerp(-0.22, 0.58, s_glide);
+      
+      cassette.position.set(casX, casY, casZ);
+      cassette.rotation.x = lerp(0, -0.10, s_glide);
+      cassette.rotation.y = lerp(0.16, -0.14, s_glide) + casFlip;
+      cassette.rotation.z = lerp(-0.04, 0.03, s_glide);
+    } else {
+      cassette.visible = false;
+      cassette.position.set(0, 0, 0);
+    }
+  } else {
+    hero.position.set(0, 0, 0);
+    hero.rotation.set(0, flip, 0);
+    cassette.visible = false;
+  }
+
+  heroVial.position.lerpVectors(vialStart, vialLift, lift).lerp(vialEnd, move);
+  heroVial.position.y += bob;
+  heroVial.rotation.z = 0.35 * move;
+
+  // الكاميرا: زووم ودوران مريح
   const open = ease(seg(p, 0.15, 0.85));
   controls.target.y = lerp(1.2, 2.5, open);
   const z = lerp(1.35, 1.0, open);
   if (Math.abs(camera.zoom - z) > 0.0005) { camera.zoom = z; camera.updateProjectionMatrix(); }
 }
 
-/* ───────────────────────── 8. التفاعل والتحكم ───────────────────────── */
-const hint = document.getElementById('hint');
-const btn = document.getElementById('btn');
-
-function setOpen(open) {
-  targetP = open ? 1 : 0;
-  btn.disabled = true;
-  hint.style.opacity = 0;
-}
-
-function updateUI() {
-  if (btn.disabled && Math.abs(p - targetP) < 0.001) {
-    btn.disabled = false;
-    if (targetP === 1) {
-      btn.textContent = 'Close box';
-      hint.textContent = 'انقر على كيس الفحص لقلبه • اسحب بالماوس للتدوير';
-    } else {
-      btn.textContent = 'Open box';
-      hint.textContent = 'اضغط على استيكر QC لفتح العلبة • اسحب بالماوس للتدوير';
-    }
-    hint.style.opacity = 1;
-  }
-}
-
-btn.addEventListener('click', () => setOpen(targetP === 0));
-
+/* ───────────────────────── Interaction ───────────────────────── */
 const raycaster = new THREE.Raycaster();
 const ndc = new THREE.Vector2();
 function pick(ev, objs) {
@@ -495,31 +502,91 @@ function pick(ev, objs) {
   return raycaster.intersectObjects(objs, true).length > 0;
 }
 
+const hint = document.getElementById('hint');
+const btn = document.getElementById('btn');
+const pouchBtn = document.getElementById('pouchBtn');
+const badge = document.getElementById('badge');
+
+function setOpen(open) {
+  targetP = open ? 1 : 0;
+  btn.disabled = true;
+  hint.style.opacity = 0;
+  if (!open) targetPouchOpen = 0;
+}
+
+function updateUI() {
+  if (btn.disabled && Math.abs(p - targetP) < 0.001) {
+    btn.disabled = false;
+  }
+  if (targetP === 1 && p > 0.8) {
+    btn.textContent = 'Close box';
+    pouchBtn.style.display = 'block';
+    badge.style.opacity = '1';
+    const testName = cfg.name || 'Hpag';
+    if (targetPouchOpen === 0) {
+      pouchBtn.textContent = `🔬 استخراج كارت ${testName}`;
+      hint.textContent = `انقر على الكيس لفتحه واستخراج كارت ${testName} • اسحب للتدوير 360°`;
+    } else {
+      pouchBtn.textContent = '↩️ إعادة الكارت للكيس';
+      hint.textContent = 'انقر على الكارت لقلبه • انقر على الكيس لقلبه • اسحب للتدوير 360°';
+    }
+  } else {
+    btn.textContent = 'Open box';
+    pouchBtn.style.display = 'none';
+    badge.style.opacity = '0';
+    hint.textContent = 'Click the QC sticker to open the box';
+  }
+  hint.style.opacity = (p < 0.05 || p > 0.95) ? 1 : 0;
+}
+
+btn.addEventListener('click', () => setOpen(targetP === 0));
+pouchBtn.addEventListener('click', () => {
+  targetPouchOpen = targetPouchOpen === 0 ? 1 : 0;
+  updateUI();
+});
+if (autoOpen) {
+  btn.textContent = 'Close box';
+  updateUI();
+}
+
 let down = null;
 canvas.addEventListener('pointerdown', (e) => { down = { x: e.clientX, y: e.clientY }; });
 canvas.addEventListener('pointerup', (e) => {
   if (!down) return;
   const moved = Math.hypot(e.clientX - down.x, e.clientY - down.y);
   down = null;
-  if (moved > 6) return;
-  if (targetP === 0 && p === 0 && pick(e, [stickerFront, stickerTop, glowRing])) setOpen(true);
-  else if (targetP === 1 && p === 1 && pick(e, [hero])) flipTarget += Math.PI;
+  if (moved > 6) return;                          // ده كان سحب مش ضغطة
+  if (targetP === 0 && p === 0 && pick(e, [stickerFront, stickerTop, glowRing])) {
+    setOpen(true);
+  } else if (targetP === 1 && p === 1) {
+    if (pouchOpen > 0.5 && pick(e, [cassette])) {
+      casFlipTarget += Math.PI;
+    } else if (pick(e, [hero])) {
+      if (targetPouchOpen === 0) {
+        targetPouchOpen = 1;
+      } else {
+        flipTarget += Math.PI;
+      }
+    }
+  }
 });
 canvas.addEventListener('pointermove', (e) => {
   if (down) return;
   const over = (targetP === 0 && p === 0 && pick(e, [stickerFront, stickerTop, glowRing])) ||
-               (targetP === 1 && p === 1 && pick(e, [hero]));
+               (targetP === 1 && p === 1 && (pick(e, [hero]) || (pouchOpen > 0.5 && pick(e, [cassette]))));
   canvas.style.cursor = over ? 'pointer' : 'grab';
 });
 
-window.addEventListener('resize', () => {
+/* ───────────────────────── Loop / resize ───────────────────────── */
+function resize() {
   const w = window.innerWidth, h = window.innerHeight;
   renderer.setSize(w, h, false);
   camera.aspect = w / h;
-  camera.fov = Math.min(75, 38 * Math.max(1, 1.45 / camera.aspect));
+  camera.fov = Math.min(75, 38 * Math.max(1, 1.45 / camera.aspect));   // موبايل: وسّع الزاوية
   camera.updateProjectionMatrix();
-});
-window.dispatchEvent(new Event('resize'));
+}
+window.addEventListener('resize', resize);
+resize();
 
 const clock = new THREE.Clock();
 renderer.setAnimationLoop(() => {
@@ -529,17 +596,21 @@ renderer.setAnimationLoop(() => {
     const step = dt / DURATION;
     p = targetP > p ? Math.min(targetP, p + step) : Math.max(targetP, p - step);
   }
+  if (pouchOpen !== targetPouchOpen) {
+    const pStep = dt / 0.85;
+    pouchOpen = targetPouchOpen > pouchOpen ? Math.min(targetPouchOpen, pouchOpen + pStep) : Math.max(targetPouchOpen, pouchOpen - pStep);
+  }
   flip += (flipTarget - flip) * Math.min(1, dt * 6);
+  casFlip += (casFlipTarget - casFlip) * Math.min(1, dt * 7);
   applyState(t);
   updateUI();
   controls.update();
   renderer.render(scene, camera);
 });
 
-if (new URLSearchParams(location.search).get('open') === '1') setOpen(true);
+// للتجربة: ?open=1 بيفتح العلبة أوتوماتيك, ?instant=1 بيفتحها فوراً
 if (new URLSearchParams(location.search).get('instant') === '1') { p = 1; targetP = 1; }
-const progressParam = parseFloat(new URLSearchParams(location.search).get('progress'));
-if (!isNaN(progressParam)) { p = progressParam; targetP = progressParam; }
+else if (new URLSearchParams(location.search).get('open') === '1') setOpen(true);
 window.__evo = { setOpen, camera, controls, get p() { return p; } };
 </script>
 </body>

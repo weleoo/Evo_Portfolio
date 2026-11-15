@@ -9,13 +9,23 @@
     font-family:'Poppins',system-ui,-apple-system,'Segoe UI',Roboto,sans-serif}
   #c{position:fixed;inset:0;width:100%;height:100%;display:block;touch-action:none;outline:none}
   #hint{position:fixed;left:50%;bottom:16px;transform:translateX(-50%);
-    background:rgba(255,255,255,.88);color:#2535a8;font-size:13px;font-weight:600;
-    padding:9px 18px;border-radius:30px;box-shadow:0 2px 10px rgba(0,0,0,.12);
-    pointer-events:none;transition:opacity .3s;white-space:nowrap}
+    background:rgba(255,255,255,.92);color:#102a43;font-size:13px;font-weight:600;
+    padding:9px 20px;border-radius:30px;box-shadow:0 3px 14px rgba(0,0,0,.15);
+    pointer-events:none;transition:opacity .3s;white-space:nowrap;z-index:10}
+  #badge{position:fixed;top:14px;left:50%;transform:translateX(-50%);
+    background:rgba(255,255,255,.94);color:#004d40;font-size:12px;font-weight:700;
+    padding:8px 20px;border-radius:30px;box-shadow:0 3px 12px rgba(0,0,0,.14);
+    border:1px solid rgba(0,137,123,.25);pointer-events:none;transition:opacity .35s;
+    white-space:nowrap;opacity:0;z-index:10}
   #btn{position:fixed;right:16px;top:14px;border:0;cursor:pointer;color:#fff;font-weight:700;
     font-size:13px;padding:10px 22px;border-radius:30px;
-    background:linear-gradient(#0055d0,#4a98ff);box-shadow:0 2px 10px rgba(0,0,0,.18)}
+    background:linear-gradient(#0055d0,#4a98ff);box-shadow:0 2px 10px rgba(0,0,0,.18);z-index:10}
   #btn:disabled{opacity:.55;cursor:default}
+  #pouchBtn{position:fixed;right:16px;top:62px;border:0;cursor:pointer;color:#fff;font-weight:700;
+    font-size:12px;padding:9px 18px;border-radius:30px;
+    background:linear-gradient(135deg,#00897b,#004d40);box-shadow:0 3px 12px rgba(0,137,123,.35);
+    transition:all .25s;display:none;z-index:10}
+  #pouchBtn:hover{transform:translateY(-1px);box-shadow:0 5px 16px rgba(0,137,123,.5)}
   #load{position:fixed;inset:0;display:flex;align-items:center;justify-content:center;
     color:#2535a8;font-weight:600;transition:opacity .4s;pointer-events:none}
 </style>
@@ -23,8 +33,10 @@
 <body>
 <canvas id="c" tabindex="0"></canvas>
 <div id="load">Loading 3D…</div>
+<div id="badge" dir="rtl">🛡️ عبوة فويل معزولة مانعة للرطوبة — هوية حصرية وتصميم معتمد لـ <bdi>EVO MED</bdi></div>
 <div id="hint">Click the QC sticker to open the box</div>
 <button id="btn">Open box</button>
+<button id="pouchBtn">🔬 استخراج كارت Hpag</button>
 
 <script type="importmap">{ "imports": { "three": "./three.module.js" } }</script>
 <script type="module">
@@ -35,8 +47,8 @@ import { OrbitControls } from './OrbitControls.js';
    لإضافة منتج جديد: حط صوره في textures/<id>/ بنفس الأسماء وضيف سطر هنا
    (front/back/left/right/top/pouch_front/pouch_back .jpg) */
 const PRODUCTS = {
-  hpylori_ag: { dir: 'textures/hpylori_ag/', L: 4.35, W: 3.2, H: 2.0, flap: 0.12, stickerX: 0.0 },
-  ctni:       { dir: 'textures/ctni/',       L: 4.35, W: 3.2, H: 2.0, flap: 0.12, stickerX: 0.0 },
+  hpylori_ag: { name: 'Hpag', dir: 'textures/hpylori_ag/', L: 4.35, W: 3.2, H: 2.0, flap: 0.12, stickerX: 0.0 },
+  ctni:       { name: 'CTNI', dir: 'textures/ctni/',       L: 4.35, W: 3.2, H: 2.0, flap: 0.12, stickerX: 0.0 },
 };
 const params = new URLSearchParams(location.search);
 const key = params.get('p') || 'hpylori_ag';
@@ -46,6 +58,8 @@ if (key === 'evo_plus') {
 const cfg = PRODUCTS[key] || PRODUCTS.hpylori_ag;
 const autoOpen = params.get('open') === '1';
 const autoFlip = params.get('flip') === '1';
+const autoPouch = params.get('pouch') === 'open' || params.get('cassette') === '1';
+const autoCasFlip = params.get('casflip') === '1';
 const { L, W, H } = cfg;
 const T = 0.04;                 // سمك الكرتون
 const FH = H * cfg.flap;        // ارتفاع اللسان الأمامي للغطا
@@ -100,7 +114,7 @@ const manager = new THREE.LoadingManager(
 const loader = new THREE.TextureLoader(manager);
 const aniso = renderer.capabilities.getMaxAnisotropy();
 function tex(name) {
-  const t = loader.load(cfg.dir + name + '?v=5');
+  const t = loader.load(cfg.dir + name + '?v=7');
   t.colorSpace = THREE.SRGBColorSpace;
   t.anisotropy = aniso;
   return t;
@@ -214,6 +228,25 @@ const hero = new THREE.Mesh(new THREE.BoxGeometry(PL, PH, PT), heroMats);
 hero.castShadow = true;
 const heroPivot = new THREE.Group();
 heroPivot.add(hero);
+
+// كاسيت التحليل الطبي Hpag
+const casFrontTex = tex('cassette_front.png');
+const casBackTex = tex('cassette_back.png');
+const CL = 2.15, CH = 0.62, CT = 0.08;
+const casPlasticMat = std({ color: 0xffffff, roughness: 0.45, metalness: 0.02 });
+const casMats = [
+  casPlasticMat, // +X right
+  casPlasticMat, // -X left
+  casPlasticMat, // +Y top
+  casPlasticMat, // -Y bottom
+  std({ map: casFrontTex, roughness: 0.4, metalness: 0.04 }), // +Z front face (sample well, Hpag, EVO)
+  std({ map: casBackTex, roughness: 0.45, metalness: 0.02 })  // -Z back face
+];
+const cassette = new THREE.Mesh(new THREE.BoxGeometry(CL, CH, CT), casMats);
+cassette.castShadow = true;
+cassette.visible = false;
+heroPivot.add(cassette);
+
 inner.add(heroPivot);
 const heroStart = new THREE.Vector3(heroX, T + PH / 2, 0);
 heroPivot.position.copy(heroStart);
@@ -312,6 +345,8 @@ const lerp = (a, b, t) => a + (b - a) * t;
 
 let p = autoOpen ? 1 : 0, targetP = autoOpen ? 1 : 0;                           // 0 = مقفولة ، 1 = مفتوحة والكارت بره
 let flipTarget = autoFlip ? Math.PI : 0, flip = autoFlip ? Math.PI : 0;
+let pouchOpen = autoPouch ? 1 : 0, targetPouchOpen = autoPouch ? 1 : 0;
+let casFlipTarget = autoCasFlip ? Math.PI : 0, casFlip = autoCasFlip ? Math.PI : 0;
 const DURATION = 4.8;                             // ثواني للفتح الكامل
 const LID_OPEN = THREE.MathUtils.degToRad(112);
 
@@ -410,8 +445,41 @@ function applyState(time) {
 
   heroPivot.position.lerpVectors(heroStart, heroLift, lift).lerp(heroEnd, move);
   heroPivot.position.y += bob;
-  heroPivot.rotation.y = lerp(Math.PI / 2, 0, move) + flip;
+  heroPivot.rotation.y = lerp(Math.PI / 2, 0, move);
   heroPivot.rotation.x = -0.1 * move;
+
+  // ──────────────── 4) فتح الكيس واستخراج كاسيت Hpag ────────────────
+  const s_open = ease(pouchOpen);
+  if (move > 0.85) {
+    hero.position.x = lerp(0, -1.35, s_open);
+    hero.position.y = lerp(0, 0.12, s_open);
+    hero.position.z = lerp(0, -0.22, s_open);
+    hero.rotation.y = lerp(0, 0.16, s_open) + flip;
+    hero.rotation.x = lerp(0, -0.04, s_open);
+    hero.rotation.z = lerp(0, -0.04, s_open);
+
+    if (s_open > 0.01) {
+      cassette.visible = true;
+      const s_up = ease(seg(s_open, 0.0, 0.45));
+      const s_glide = ease(seg(s_open, 0.35, 1.0));
+      
+      const casX = lerp(-1.35, 1.35, s_glide);
+      const casY = lerp(0.12, 0.82, s_up) + lerp(0, -0.52, s_glide) + (s_open > 0.98 ? Math.sin(time * 2.2) * 0.02 : 0);
+      const casZ = lerp(-0.22, 0.58, s_glide);
+      
+      cassette.position.set(casX, casY, casZ);
+      cassette.rotation.x = lerp(0, -0.10, s_glide);
+      cassette.rotation.y = lerp(0.16, -0.14, s_glide) + casFlip;
+      cassette.rotation.z = lerp(-0.04, 0.03, s_glide);
+    } else {
+      cassette.visible = false;
+      cassette.position.set(0, 0, 0);
+    }
+  } else {
+    hero.position.set(0, 0, 0);
+    hero.rotation.set(0, flip, 0);
+    cassette.visible = false;
+  }
 
   heroVial.position.lerpVectors(vialStart, vialLift, lift).lerp(vialEnd, move);
   heroVial.position.y += bob;
@@ -436,28 +504,49 @@ function pick(ev, objs) {
 
 const hint = document.getElementById('hint');
 const btn = document.getElementById('btn');
+const pouchBtn = document.getElementById('pouchBtn');
+const badge = document.getElementById('badge');
+
 function setOpen(open) {
   targetP = open ? 1 : 0;
   btn.disabled = true;
   hint.style.opacity = 0;
+  if (!open) targetPouchOpen = 0;
 }
+
 function updateUI() {
   if (btn.disabled && Math.abs(p - targetP) < 0.001) {
     btn.disabled = false;
-    if (targetP === 1) {
-      btn.textContent = 'Close box';
-      hint.textContent = 'Click the card to flip it • Drag to rotate';
-    } else {
-      btn.textContent = 'Open box';
-      hint.textContent = 'Click the QC sticker to open the box';
-    }
-    hint.style.opacity = 1;
   }
+  if (targetP === 1 && p > 0.8) {
+    btn.textContent = 'Close box';
+    pouchBtn.style.display = 'block';
+    badge.style.opacity = '1';
+    const testName = cfg.name || 'Hpag';
+    if (targetPouchOpen === 0) {
+      pouchBtn.textContent = `🔬 استخراج كارت ${testName}`;
+      hint.textContent = `انقر على الكيس لفتحه واستخراج كارت ${testName} • اسحب للتدوير 360°`;
+    } else {
+      pouchBtn.textContent = '↩️ إعادة الكارت للكيس';
+      hint.textContent = 'انقر على الكارت لقلبه • انقر على الكيس لقلبه • اسحب للتدوير 360°';
+    }
+  } else {
+    btn.textContent = 'Open box';
+    pouchBtn.style.display = 'none';
+    badge.style.opacity = '0';
+    hint.textContent = 'Click the QC sticker to open the box';
+  }
+  hint.style.opacity = (p < 0.05 || p > 0.95) ? 1 : 0;
 }
+
 btn.addEventListener('click', () => setOpen(targetP === 0));
+pouchBtn.addEventListener('click', () => {
+  targetPouchOpen = targetPouchOpen === 0 ? 1 : 0;
+  updateUI();
+});
 if (autoOpen) {
   btn.textContent = 'Close box';
-  hint.textContent = 'Click the card to flip it • Drag to rotate';
+  updateUI();
 }
 
 let down = null;
@@ -467,13 +556,24 @@ canvas.addEventListener('pointerup', (e) => {
   const moved = Math.hypot(e.clientX - down.x, e.clientY - down.y);
   down = null;
   if (moved > 6) return;                          // ده كان سحب مش ضغطة
-  if (targetP === 0 && p === 0 && pick(e, [stickerFront, stickerTop, glowRing])) setOpen(true);
-  else if (targetP === 1 && p === 1 && pick(e, [hero])) flipTarget += Math.PI;
+  if (targetP === 0 && p === 0 && pick(e, [stickerFront, stickerTop, glowRing])) {
+    setOpen(true);
+  } else if (targetP === 1 && p === 1) {
+    if (pouchOpen > 0.5 && pick(e, [cassette])) {
+      casFlipTarget += Math.PI;
+    } else if (pick(e, [hero])) {
+      if (targetPouchOpen === 0) {
+        targetPouchOpen = 1;
+      } else {
+        flipTarget += Math.PI;
+      }
+    }
+  }
 });
 canvas.addEventListener('pointermove', (e) => {
   if (down) return;
   const over = (targetP === 0 && p === 0 && pick(e, [stickerFront, stickerTop, glowRing])) ||
-               (targetP === 1 && p === 1 && pick(e, [hero]));
+               (targetP === 1 && p === 1 && (pick(e, [hero]) || (pouchOpen > 0.5 && pick(e, [cassette]))));
   canvas.style.cursor = over ? 'pointer' : 'grab';
 });
 
@@ -496,7 +596,12 @@ renderer.setAnimationLoop(() => {
     const step = dt / DURATION;
     p = targetP > p ? Math.min(targetP, p + step) : Math.max(targetP, p - step);
   }
+  if (pouchOpen !== targetPouchOpen) {
+    const pStep = dt / 0.85;
+    pouchOpen = targetPouchOpen > pouchOpen ? Math.min(targetPouchOpen, pouchOpen + pStep) : Math.max(targetPouchOpen, pouchOpen - pStep);
+  }
   flip += (flipTarget - flip) * Math.min(1, dt * 6);
+  casFlip += (casFlipTarget - casFlip) * Math.min(1, dt * 7);
   applyState(t);
   updateUI();
   controls.update();

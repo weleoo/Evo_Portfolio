@@ -18,8 +18,8 @@ class _ProductTickerState extends State<ProductTicker> {
   static const List<({String name, String badge, bool is3D, Color color})> _products = [
     (name: 'EVO STAR', badge: '3D DEVICE', is3D: true, color: Color(0xFF0055D0)),
     (name: 'EVO PLUS', badge: '3D DEVICE', is3D: true, color: Color(0xFFCF1F2A)),
+    (name: 'H. Pylori Ag (Hpag)', badge: '3D KIT', is3D: true, color: Color(0xFF00897B)),
     (name: 'CTNI TEST', badge: 'RAPID KIT', is3D: true, color: Color(0xFF5B67C9)),
-    (name: 'H. Pylori Ag', badge: '3D KIT', is3D: true, color: Color(0xFF00897B)),
     (name: 'HCG TEST', badge: 'RAPID KIT', is3D: true, color: Color(0xFF8E24AA)),
     (name: 'HBs Ag TEST', badge: 'RAPID KIT', is3D: true, color: Color(0xFF3949AB)),
     (name: 'FOB TEST', badge: 'RAPID KIT', is3D: true, color: Color(0xFF00ACC1)),

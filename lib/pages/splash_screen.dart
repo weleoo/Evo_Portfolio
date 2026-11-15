@@ -469,6 +469,8 @@ class _SkipButtonState extends State<_SkipButton> {
 
 // ───────────────────────── Optimized Painters ─────────────────────────
 
+
+
 /// حلقة دائرية محسنة مع تخزين مسبق للـ Paint
 class _OptimizedRingPainter extends CustomPainter {
   _OptimizedRingPainter({required this.progress});

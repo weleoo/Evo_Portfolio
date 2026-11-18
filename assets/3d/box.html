@@ -47,8 +47,8 @@ import { OrbitControls } from './OrbitControls.js';
    لإضافة منتج جديد: حط صوره في textures/<id>/ بنفس الأسماء وضيف سطر هنا
    (front/back/left/right/top/pouch_front/pouch_back .jpg) */
 const PRODUCTS = {
-  hpylori_ag: { name: 'Hpag', dir: 'textures/hpylori_ag/', L: 4.35, W: 3.2, H: 2.0, flap: 0.12, stickerX: 0.0 },
-  ctni:       { name: 'CTNI', dir: 'textures/ctni/',       L: 4.35, W: 3.2, H: 2.0, flap: 0.12, stickerX: 0.0 },
+  hpylori_ag: { name: 'Hpag', dir: 'textures/hpylori_ag/', L: 4.35, W: 3.2,  H: 2.0,  flap: 0.12, stickerX: 0.0, interior: 'stool_vials' },
+  ctni:       { name: 'CTNI', dir: 'textures/ctni/',       L: 4.65, W: 2.55, H: 1.75, flap: 0.12, stickerX: 0.0, interior: 'blood_buffer' },
 };
 const params = new URLSearchParams(location.search);
 const key = params.get('p') || 'hpylori_ag';
@@ -114,7 +114,7 @@ const manager = new THREE.LoadingManager(
 const loader = new THREE.TextureLoader(manager);
 const aniso = renderer.capabilities.getMaxAnisotropy();
 function tex(name) {
-  const t = loader.load(cfg.dir + name + '?v=9');
+  const t = loader.load(cfg.dir + name + '?v=10');
   t.colorSpace = THREE.SRGBColorSpace;
   t.anisotropy = aniso;
   return t;
@@ -171,11 +171,11 @@ lid.add(lidTop, flap);
 const inner = new THREE.Group();
 box.add(inner);
 
-// حاجز الأمبولات (كرتون)
-const trayW = 1.3;
+const isBloodKit = cfg.interior === 'blood_buffer';
+const trayW = isBloodKit ? 0.78 : 1.3;
 const divX = -L / 2 + T + trayW;
-const divider = new THREE.Mesh(new THREE.BoxGeometry(0.04, 1.3, W - 2 * T), kraft);
-divider.position.set(divX, 0.65 + T, 0);
+const divider = new THREE.Mesh(new THREE.BoxGeometry(0.04, H * 0.65, W - 2 * T), kraft);
+divider.position.set(divX, H * 0.325 + T, 0);
 divider.castShadow = divider.receiveShadow = true;
 inner.add(divider);
 
@@ -190,29 +190,86 @@ function makeVial() {
   [body, cap, tip].forEach(m => { m.castShadow = true; g.add(m); });
   return g;
 }
+
+function makeBufferLabelTex() {
+  const c = document.createElement('canvas'); c.width = 512; c.height = 256;
+  const g = c.getContext('2d');
+  g.fillStyle = '#ffffff'; g.fillRect(0, 0, 512, 256);
+  g.fillStyle = '#ff6600'; g.fillRect(0, 0, 512, 46);
+  g.fillStyle = '#ff6600'; g.fillRect(0, 224, 512, 32);
+  g.fillStyle = '#ffffff'; g.font = 'bold 28px Georgia, serif'; g.textAlign = 'center';
+  g.fillText('EVO MED', 256, 33);
+  g.fillStyle = '#1f2937'; g.font = 'bold 46px system-ui, Arial, sans-serif';
+  g.fillText('BUFFER', 256, 128);
+  g.fillStyle = '#4b5563'; g.font = '600 22px system-ui, Arial, sans-serif';
+  g.fillText('Assay Diluent • 3 mL', 256, 168);
+  g.fillStyle = '#6b7280'; g.font = '600 18px system-ui, Arial, sans-serif';
+  g.fillText('For In Vitro Diagnostic Use', 256, 202);
+  const t = new THREE.CanvasTexture(c);
+  t.colorSpace = THREE.SRGBColorSpace;
+  return t;
+}
+
+let bufferLabelTex = null;
+function makeBufferBottle() {
+  if (!bufferLabelTex) bufferLabelTex = makeBufferLabelTex();
+  const g = new THREE.Group();
+  const ldpe = std({ color: 0xf7f8fa, roughness: 0.32, metalness: 0.02 });
+  const body = new THREE.Mesh(new THREE.CylinderGeometry(0.22, 0.22, 0.72, 28), ldpe);
+  body.position.y = 0.36;
+  const label = new THREE.Mesh(
+    new THREE.CylinderGeometry(0.224, 0.224, 0.50, 28, 1, true),
+    std({ map: bufferLabelTex, roughness: 0.42 })
+  );
+  label.position.y = 0.36;
+  label.rotation.y = Math.PI;
+  const shoulder = new THREE.Mesh(new THREE.CylinderGeometry(0.11, 0.22, 0.16, 28), ldpe);
+  shoulder.position.y = 0.80;
+  const capRing = new THREE.Mesh(new THREE.CylinderGeometry(0.125, 0.125, 0.12, 24), std({ color: 0xff6600, roughness: 0.35 }));
+  capRing.position.y = 0.92;
+  const cap = new THREE.Mesh(new THREE.CylinderGeometry(0.085, 0.12, 0.28, 24), std({ color: 0xfafafa, roughness: 0.28 }));
+  cap.position.y = 1.12;
+  [body, label, shoulder, capRing, cap].forEach(m => { m.castShadow = true; g.add(m); });
+  return g;
+}
+
 const vials = [];
-const cols = [-1.82, -1.52, -1.22];
-for (let c = 0; c < 3; c++) {
-  const n = c === 1 ? 8 : 9;
-  for (let r = 0; r < n; r++) {
-    if (vials.length >= 25) break;
-    const v = makeVial();
-    const z = -1.42 + r * 0.355 + (c === 1 ? 0.18 : 0);
-    v.position.set(cols[c], T, z);
-    inner.add(v);
-    vials.push(v);
+if (isBloodKit) {
+  // عبوات محلول التخفيف (Buffer) الخاصة بعلبة CTNI (40 Test)
+  const bx = -L / 2 + T + trayW / 2;
+  [-0.58, 0.58].forEach((z) => {
+    const b = makeBufferBottle();
+    b.position.set(bx, T, z);
+    inner.add(b);
+    vials.push(b);
+  });
+} else {
+  const cols = [-1.82, -1.52, -1.22];
+  for (let c = 0; c < 3; c++) {
+    const n = c === 1 ? 8 : 9;
+    for (let r = 0; r < n; r++) {
+      if (vials.length >= 25) break;
+      const v = makeVial();
+      const z = -1.42 + r * 0.355 + (c === 1 ? 0.18 : 0);
+      v.position.set(cols[c], T, z);
+      inner.add(v);
+      vials.push(v);
+    }
   }
 }
-const heroVial = vials[8];                       // أقرب أمبولة للواجهة
+const heroVial = isBloodKit ? vials[vials.length - 1] : vials[8]; // أقرب عبوة/أمبولة للواجهة
 const vialStart = heroVial.position.clone();
 
 // كروت التيست (كدسة)
-const PL = 2.8, PH = 1.55, PT = 0.05;            // طول/ارتفاع/سمك الكارت
+const PL = isBloodKit ? 2.34 : 2.8;
+const PH = isBloodKit ? 1.30 : 1.55;
+const PT = isBloodKit ? 0.042 : 0.05;            // طول/ارتفاع/سمك الكيس
 const pouchMat = std({ color: 0xdde5ee, roughness: 0.35, metalness: 0.45 });
-const heroX = 0.55;
+const heroX = isBloodKit ? 0.35 : 0.55;
+const stackStep = isBloodKit ? 0.088 : 0.1;
 const stackGeo = new THREE.BoxGeometry(PT, PH, PL);
-for (let x = divX + 0.12; x < L / 2 - T - 0.05; x += 0.1) {
-  if (Math.abs(x - heroX) < 0.06) continue;      // مكان الكارت اللي هيطلع
+for (let x = divX + 0.10; x < L / 2 - T - 0.05; x += stackStep) {
+  if (Math.abs(x - heroX) < stackStep * 0.6) continue; // مكان الكيس اللي هيطلع
   const m = new THREE.Mesh(stackGeo, pouchMat);
   m.position.set(x, T + PH / 2, 0);
   m.castShadow = m.receiveShadow = true;
@@ -220,8 +277,8 @@ for (let x = divX + 0.12; x < L / 2 - T - 0.05; x += 0.1) {
 }
 
 // الكارت البطل وكيس الفويل القابل للتمزيق والرمي الحركي
-const tearW = 0.38;
-const bodyW = PL - tearW; // 2.42
+const tearW = PL * (0.38 / 2.8);
+const bodyW = PL - tearW;
 const foilInnerMat = std({ color: 0xd8dde4, roughness: 0.22, metalness: 0.88 }); // باطن الفويل الألومنيوم اللامع
 
 const bodyFrontTex = tex('pouch_body_front.jpg');
@@ -383,10 +440,14 @@ let casFlipTarget = autoCasFlip ? Math.PI : 0, casFlip = autoCasFlip ? Math.PI :
 const DURATION = 4.8;                             // ثواني للفتح الكامل
 const LID_OPEN = THREE.MathUtils.degToRad(112);
 
-const heroLift = new THREE.Vector3(heroX, 3.1, 0);
-const heroEnd = new THREE.Vector3(0.25, 4.1, 1.7);
-const vialLift = new THREE.Vector3(vialStart.x, 3.0, vialStart.z);
-const vialEnd = new THREE.Vector3(-2.15, 3.45, 2.0);
+const heroLift = new THREE.Vector3(heroX, H + 1.1, 0);
+const heroEnd = new THREE.Vector3(0.25, isBloodKit ? H + 1.65 : H + 2.1, 1.7);
+const groundDropY = -(heroEnd.y - 0.04);
+const stripTearX = -PL / 2 - 0.22;
+const stripLandX = -PL / 2 + 0.05;
+const bodyTearX = tearW / 2 + 0.09;
+const vialLift = new THREE.Vector3(vialStart.x, H + 1.0, vialStart.z);
+const vialEnd = new THREE.Vector3(isBloodKit ? -2.30 : -2.15, isBloodKit ? H + 1.25 : H + 1.45, isBloodKit ? 1.85 : 2.0);
 
 function applyState(time) {
   // ──────────────── 1) مرحلة تقشير الاستيكر أولاً ────────────────
@@ -486,12 +547,12 @@ function applyState(time) {
   if (move > 0.85) {
     // ◄ المرحلة 1: حركة تمزّق الطرف الأيسر للكيس (0.00 -> 0.32)
     const s_tear = ease(seg(s_open, 0.0, 0.28));
-    pouchStrip.position.x = lerp(-PL / 2 + tearW / 2, -1.62, s_tear);
+    pouchStrip.position.x = lerp(-PL / 2 + tearW / 2, stripTearX, s_tear);
     pouchStrip.position.z = lerp(0.0, -0.18, s_tear);
     pouchStrip.rotation.y = lerp(0.0, -0.65, s_tear);
     pouchStrip.rotation.z = lerp(0.0, 0.22, s_tear);
 
-    pouchBody.position.x = lerp(tearW / 2, 0.28, s_tear);
+    pouchBody.position.x = lerp(tearW / 2, bodyTearX, s_tear);
     pouchBody.rotation.y = lerp(0.0, 0.06, s_tear);
 
     // ◄ المرحلة 2: رمي الكيس الفارغ بحركة مقذوف وفيزياء دوران وسقوط وارتداد (0.28 -> 0.82)
@@ -502,7 +563,7 @@ function applyState(time) {
 
       // قوس الرمي الرأسي: نبضة صعود للأعلى أولاً ثم هبوط متسارع بفعل الجاذبية
       const loft = Math.sin(t_lin * Math.PI) * 0.55 * (1 - t_lin * 0.7);
-      const gravity = -4.06 * Math.pow(t_lin, 1.85);
+      const gravity = groundDropY * Math.pow(t_lin, 1.85);
 
       // ارتداد خفيف ممتص عند ملامسة سطح الطاولة
       let bounce = 0;
@@ -521,7 +582,7 @@ function applyState(time) {
       hero.rotation.z = Math.sin(t_lin * Math.PI * 1.4) * 0.35 + lerp(0, 0.16, t);
 
       // شريط التمزق يتطاير ويسقط مستقراً بجانب الكيس على الطاولة
-      pouchStrip.position.x = lerp(-1.62, -1.35, t);
+      pouchStrip.position.x = lerp(stripTearX, stripLandX, t);
       pouchStrip.position.y = Math.sin(t_lin * Math.PI * 2.5) * 0.08;
       pouchStrip.position.z = lerp(-0.18, 0.0, t);
       pouchStrip.rotation.y = lerp(-0.65, 0.0, t);
